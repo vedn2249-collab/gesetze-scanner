@@ -1,0 +1,6 @@
+{
+  "name": "Gesetzes-Scanner",
+  "description": "Premium-Modul für Verfahrens-Schutz & Beschuldigten-Rechte. Bietet sofortige taktische Orientierung und Schadensminimierung.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

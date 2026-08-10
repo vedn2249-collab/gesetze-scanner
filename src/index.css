@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom styles for gold and silver styling */
+.text-gold {
+  color: #E6C687;
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #FFE0A3 0%, #D4AF37 50%, #AA7C11 100%);
+}
+
+.bg-silver-gradient {
+  background: linear-gradient(135deg, #FFFFFF 0%, #BDBDBD 50%, #757575 100%);
+}
+
+.border-silver {
+  border-color: rgba(192, 192, 192, 0.4);
+}
+
+.border-gold {
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+.shadow-gold-glow {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+}
+
+.shadow-silver-glow {
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.15);
+}
+
+/* Animation for glowing elements */
+@keyframes goldPulse {
+  0%, 100% {
+    text-shadow: 0 0 8px rgba(230, 198, 135, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 16px rgba(230, 198, 135, 0.7), 0 0 24px rgba(212, 175, 55, 0.4);
+  }
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 3s infinite;
+}
+
+/* Glassmorphism containers */
+.glass-panel {
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Scrollbar styles for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(192, 192, 192, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.5);
+}
