@@ -34,8 +34,8 @@ function getAiClient() {
 
 // Helper function for retrying Gemini calls with fallback models on 503/429 transient errors
 async function generateContentWithRetry(ai: GoogleGenAI, params: any) {
-  // Order candidate models starting with stable production models
-  const candidateModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-3.6-flash"];
+  // Use valid current models starting with primary gemini-3.6-flash
+  const candidateModels = ["gemini-3.6-flash", "gemini-flash-latest"];
   let lastError: any = null;
 
   for (const model of candidateModels) {

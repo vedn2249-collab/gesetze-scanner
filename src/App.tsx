@@ -956,12 +956,13 @@ export default function App() {
     }
   };
 
-  const startScan = async (overrideSituation?: string, overrideCategory?: string, overrideDeliveryDate?: string) => {
-    const targetSituation = overrideSituation || situationText;
-    const targetCategory = overrideCategory || selectedCategory;
-    const targetDeliveryDate = overrideDeliveryDate || customDeliveryDate || "Heute / Aktuell";
+  const startScan = async (overrideSituation?: string | unknown, overrideCategory?: string | unknown, overrideDeliveryDate?: string | unknown) => {
+    const rawSituation = typeof overrideSituation === "string" ? overrideSituation : situationText;
+    const targetSituation = typeof rawSituation === "string" ? rawSituation : String(rawSituation || "");
+    const targetCategory = typeof overrideCategory === "string" ? overrideCategory : selectedCategory;
+    const targetDeliveryDate = typeof overrideDeliveryDate === "string" ? overrideDeliveryDate : (customDeliveryDate || "Heute / Aktuell");
 
-    if (!targetSituation.trim()) {
+    if (!targetSituation || !targetSituation.trim()) {
       setErrorMessage("Bitte beschreiben Sie zuerst Ihren Fall oder die Angaben für den Schriftsatz.");
       return;
     }
@@ -2116,8 +2117,54 @@ export default function App() {
                   />
                 </div>
 
+                {/* Trigger Buttons (DIREKT UNTER DEM TEXTFELD FÜR PERFEKTE ÜBERSICHT) */}
+                <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => startScan()}
+                    disabled={isLoading}
+                    className="flex-1 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-black py-4 px-6 rounded-xl font-display font-extrabold text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-gold-glow cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                        Analysiere Falltaktik...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-5 h-5 text-black" />
+                        <span>Verfahrens-Scan jetzt starten</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {(situationText || scanResult) && (
+                    <button
+                      onClick={() => {
+                        setSituationText("");
+                        setScanResult(null);
+                        setErrorMessage(null);
+                      }}
+                      className="px-5 py-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900/40 transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Zurücksetzen</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Error Banner */}
+                {errorMessage && (
+                  <div className="mt-4 p-4 rounded-xl border border-red-500/20 bg-red-950/20 text-red-400 text-xs flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Analyse beschränkt / Hinweis</p>
+                      <p className="mt-0.5">{errorMessage}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Scan Quota Badge */}
-                <div className="mt-4 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-xs">
+                <div className="mt-5 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <Scale className="w-4 h-4 text-amber-400" />
                     <span className="text-zinc-300 font-mono text-[11px]">Guthaben / Modus:</span>
@@ -2139,7 +2186,7 @@ export default function App() {
                 </div>
 
                 {/* Explicit Pricing & Plan Selector Box for Main Gesetzes-Scanner */}
-                <div className="mt-5 p-4 rounded-2xl bg-black/80 border border-amber-500/30 space-y-3">
+                <div className="mt-4 p-4 rounded-2xl bg-black/80 border border-amber-500/30 space-y-3">
                   <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                     <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
                       <CreditCard className="w-4 h-4 text-amber-400" />
@@ -2185,52 +2232,6 @@ export default function App() {
                       </div>
                     </button>
                   </div>
-                </div>
-
-                {/* Error Banner */}
-                {errorMessage && (
-                  <div className="mt-4 p-4 rounded-xl border border-red-500/20 bg-red-950/20 text-red-400 text-xs flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold">Analyse beschränkt / Hinweis</p>
-                      <p className="mt-0.5">{errorMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Trigger Buttons */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={startScan}
-                    disabled={isLoading}
-                    className="flex-1 bg-gradient-to-r from-zinc-100 via-zinc-300 to-zinc-100 text-black py-4 px-6 rounded-xl font-display font-extrabold text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-                  >
-                    {isLoading ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                        Analysiere Falltaktik...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4" />
-                        Verfahrens-Scan starten
-                      </>
-                    )}
-                  </button>
-                  
-                  {(situationText || scanResult) && (
-                    <button
-                      onClick={() => {
-                        setSituationText("");
-                        setScanResult(null);
-                        setErrorMessage(null);
-                      }}
-                      className="px-5 py-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900/40 transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Zurücksetzen
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -2684,7 +2685,7 @@ export default function App() {
                       Letzte Prüfung: <span className="text-emerald-400 font-bold">{radarLastCheckTime}</span>
                     </div>
                     <button
-                      onClick={triggerLiveLawCheck}
+                      onClick={() => triggerLiveLawCheck()}
                       disabled={isCheckingRadar}
                       className="w-full md:w-auto bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black px-4 py-2 rounded-xl font-display font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                     >
