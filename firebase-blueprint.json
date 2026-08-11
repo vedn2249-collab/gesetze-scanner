@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "users": {
+      "title": "users",
+      "description": "User account profiles with subscriptions and credits",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when account was created"
+        },
+        "isPremiumUnlocked": {
+          "type": "boolean",
+          "description": "General scanner subscription active"
+        },
+        "isTrafficUnlocked": {
+          "type": "boolean",
+          "description": "Traffic StVO scanner subscription active"
+        },
+        "schriftsatzCredits": {
+          "type": "object",
+          "description": "Module specific credits for legal documents",
+          "properties": {
+            "berufung": { "type": "number" },
+            "revision": { "type": "number" },
+            "wiederaufnahme": { "type": "number" },
+            "verfassungsbeschwerde": { "type": "number" }
+          }
+        }
+      },
+      "required": ["email"]
+    }
+  }
+}

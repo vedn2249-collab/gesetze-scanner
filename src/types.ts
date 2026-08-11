@@ -66,6 +66,44 @@ export interface LegalCategory {
   relevantParagraphs: string[];
 }
 
+export interface PrecedentCase {
+  court: string;
+  fileNumber: string;
+  date: string;
+  topic: string;
+  summary: string;
+  relevance: string;
+}
+
+export interface TacticalStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  urgency: 'SOFORT' | 'IN_3_TAGEN' | 'FRISTABHÄNGIG' | 'EMPFEHLUNG';
+}
+
+export interface OpposingArgument {
+  opposingPoint: string;
+  counterStrategy: string;
+  supportingParagraph: string;
+}
+
+export interface SuccessPrognosis {
+  scorePercent: number;
+  riskLevel: 'GERING' | 'MITTEL' | 'HOCH';
+  mainReasoning: string;
+  keyFactors: string[];
+}
+
+export interface DeadlineCalculation {
+  isValid: boolean;
+  remainingDays: number;
+  calculatedDeadline: string;
+  urgencyLevel: 'CRITICAL' | 'HIGH' | 'NORMAL';
+  dateWarning?: string | null;
+  weekendNotice?: string;
+}
+
 export interface FullSchriftsatzResult {
   meta: {
     legal_domain: string;
@@ -92,6 +130,10 @@ export interface FullSchriftsatzResult {
     referenced_laws_used: string[];
     identified_errors_or_grounds: string[];
     recommended_strategy: string;
+    precedents?: PrecedentCase[];
+    opposing_arguments?: OpposingArgument[];
+    success_prognosis?: SuccessPrognosis;
+    tactical_steps?: TacticalStep[];
   };
   draft_document: {
     header: string;
@@ -108,6 +150,12 @@ export interface ScanResult {
   taktik: string;
   schritte_mustertext: string;
   disclaimer: string;
+  precedents?: PrecedentCase[];
+  tactical_steps?: TacticalStep[];
+  opposing_arguments?: OpposingArgument[];
+  success_prognosis?: SuccessPrognosis;
+  deadline_calc?: DeadlineCalculation;
+  mustertext_template?: string;
   full_schriftsatz?: FullSchriftsatzResult;
 }
 

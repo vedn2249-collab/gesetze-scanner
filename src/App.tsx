@@ -36,7 +36,11 @@ import {
   Upload,
   Paperclip,
   Trash2,
-  FilePlus
+  FilePlus,
+  User,
+  LogIn,
+  LogOut,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ActiveTab, LegalCategory, ScanResult, LawEntry, LawAlert, TrafficUser, LawSection, TrafficScanHistory, TrafficLawAlert } from "./types";
@@ -44,7 +48,13 @@ import TrafficSubscribeForm from "./components/TrafficSubscribeForm";
 import TrafficScannerStatus from "./components/TrafficScannerStatus";
 import TrafficGeminiBot from "./components/TrafficGeminiBot";
 import TrafficAlertsLog from "./components/TrafficAlertsLog";
+import PowerLegalAnalysis from "./components/PowerLegalAnalysis";
 import { Car } from "lucide-react";
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, db } from "./lib/firebase";
+import { syncUserDataToFirestore } from "./lib/userSync";
+import { AuthModal } from "./components/AuthModal";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -560,6 +570,7 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal" | "sepa">("card");
   const [paymentName, setPaymentName] = useState("");
   const [paymentEmail, setPaymentEmail] = useState("");
+  const [paymentPassword, setPaymentPassword] = useState("");
   const [paymentCardNumber, setPaymentCardNumber] = useState("");
   const [paymentCardExpiry, setPaymentCardExpiry] = useState("");
   const [paymentCardCvc, setPaymentCardCvc] = useState("");
@@ -567,6 +578,62 @@ export default function App() {
   const [paymentAgreedTerms, setPaymentAgreedTerms] = useState(false);
   const [paymentValidationError, setPaymentValidationError] = useState<string | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string>("");
+
+  // Firebase Auth & User state
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "register">("login");
+  const [authModalNotice, setAuthModalNotice] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        if (user.email) {
+          setPaymentEmail(user.email);
+        }
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.isPremiumUnlocked !== undefined) {
+              setIsPremiumUnlocked(data.isPremiumUnlocked);
+              localStorage.setItem("gs_premium_unlocked", data.isPremiumUnlocked ? "true" : "false");
+            }
+            if (data.isTrafficUnlocked !== undefined) {
+              setIsTrafficUnlocked(data.isTrafficUnlocked);
+              localStorage.setItem("gs_traffic_unlocked", data.isTrafficUnlocked ? "true" : "false");
+            }
+            if (data.schriftsatzCredits) {
+              setSchriftsatzCredits(data.schriftsatzCredits);
+              localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(data.schriftsatzCredits));
+            }
+          } else {
+            // First time user doc creation
+            const localPremium = localStorage.getItem("gs_premium_unlocked") === "true";
+            const localTraffic = localStorage.getItem("gs_traffic_unlocked") === "true";
+            let localCredits = { berufung: 0, revision: 0, wiederaufnahme: 0, verfassungsbeschwerde: 0 };
+            try {
+              const rawCredits = localStorage.getItem("gs_schriftsatz_credits_map");
+              if (rawCredits) localCredits = JSON.parse(rawCredits);
+            } catch (e) {}
+
+            await setDoc(userRef, {
+              email: user.email,
+              createdAt: new Date().toISOString(),
+              isPremiumUnlocked: localPremium,
+              isTrafficUnlocked: localTraffic,
+              schriftsatzCredits: localCredits
+            });
+          }
+        } catch (err) {
+          console.warn("Firestore sync error:", err);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Dedicated Schriftsatz & Fristen State
   const [customDeliveryDate, setCustomDeliveryDate] = useState("");
@@ -940,6 +1007,7 @@ export default function App() {
           } catch (e) {
             console.warn("Storage error", e);
           }
+          syncUserDataToFirestore({ schriftsatzCredits: updated });
           return updated;
         });
       }
@@ -1099,9 +1167,18 @@ export default function App() {
       console.warn("Backend checkout integration fallback:", e);
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsProcessingPayment(false);
       setPaymentSuccess(true);
+
+      // Auto create Firebase account if user entered a password during checkout and isn't logged in
+      if (!auth.currentUser && paymentEmail && paymentPassword && paymentPassword.length >= 6) {
+        try {
+          await createUserWithEmailAndPassword(auth, paymentEmail.trim(), paymentPassword);
+        } catch (e) {
+          console.warn("Auto account creation during checkout notice:", e);
+        }
+      }
 
       if (selectedPlan === "traffic_annual" || selectedPlan === "traffic_lifetime") {
         setIsTrafficUnlocked(true);
@@ -1119,6 +1196,7 @@ export default function App() {
         } catch (e) {
           console.warn("Storage error", e);
         }
+        await syncUserDataToFirestore({ isTrafficUnlocked: true });
       } else if (selectedPlan?.startsWith("schriftsatz_")) {
         let subKey: keyof typeof schriftsatzCredits = "berufung";
         if (selectedPlan === "schriftsatz_revision") subKey = "revision";
@@ -1129,18 +1207,14 @@ export default function App() {
           subKey = (["berufung", "revision", "wiederaufnahme", "verfassungsbeschwerde"].includes(activeTab) ? activeTab : "berufung") as any;
         }
 
-        setSchriftsatzCredits(prev => {
-          const updated = {
-            ...prev,
-            [subKey]: (prev[subKey] || 0) + 1
-          };
-          try {
-            localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(updated));
-          } catch (e) {
-            console.warn("Storage error", e);
-          }
-          return updated;
-        });
+        const updatedCredits = { ...schriftsatzCredits, [subKey]: (schriftsatzCredits[subKey] || 0) + 1 };
+        setSchriftsatzCredits(updatedCredits);
+        try {
+          localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(updatedCredits));
+        } catch (e) {
+          console.warn("Storage error", e);
+        }
+        await syncUserDataToFirestore({ schriftsatzCredits: updatedCredits });
       } else {
         setIsPremiumUnlocked(true);
         try {
@@ -1148,6 +1222,7 @@ export default function App() {
         } catch (e) {
           console.warn("Storage error", e);
         }
+        await syncUserDataToFirestore({ isPremiumUnlocked: true });
       }
 
       setTimeout(() => {
@@ -1496,6 +1571,63 @@ export default function App() {
 
   return (
     <div id="main_app_container" className="min-h-screen bg-black text-gray-200 font-sans selection:bg-amber-500 selection:text-black pb-12">
+      {/* Top User Auth & Account Bar */}
+      <div className="bg-zinc-950 border-b border-zinc-800/80 py-2.5 px-4 text-xs">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          {currentUser ? (
+            <div className="flex flex-wrap items-center gap-2 text-zinc-300">
+              <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-amber-400" />
+                {currentUser.email}
+              </span>
+              <span className="text-zinc-700">|</span>
+              {isPremiumUnlocked && (
+                <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Allg. Scanner Aktiv
+                </span>
+              )}
+              {isTrafficUnlocked && (
+                <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                  <Car className="w-3 h-3 text-emerald-400" /> StVO Scanner Aktiv
+                </span>
+              )}
+              {(Object.values(schriftsatzCredits) as number[]).reduce((a, b) => a + b, 0) > 0 && (
+                <span className="bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                  <FileCheck className="w-3 h-3 text-amber-400" /> {(Object.values(schriftsatzCredits) as number[]).reduce((a, b) => a + b, 0)}x Schriftsatz-Guthaben
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Gast-Modus (Kostenlos testen ohne Anmeldepflicht)</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => signOut(auth)}
+                className="text-[11px] font-mono text-zinc-400 hover:text-white px-2.5 py-1 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <LogOut className="w-3 h-3 text-red-400" />
+                <span>Abmelden</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setAuthModalMode("login"); setShowAuthModal(true); }}
+                className="text-[11px] font-mono font-extrabold text-black bg-amber-400 hover:bg-amber-300 px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-gold-glow"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Anmelden / Registrieren</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Premium Metallic Header */}
       <header id="app_header" className="border-b border-zinc-800 bg-gradient-to-b from-zinc-950 to-black py-8 px-4 text-center">
         <div className="max-w-4xl mx-auto">
@@ -2258,6 +2390,9 @@ export default function App() {
                     {/* Blurrable Sections wrapper */}
                     <div className={`space-y-6 ${!isPremiumUnlocked ? "select-none blur-md pointer-events-none opacity-45" : ""}`}>
                       
+                      {/* POWER LEGAL ANALYSIS SUITE: Präzedenzfälle, Erfolgschancen, Gegenargumente, Taktik & Fristen */}
+                      <PowerLegalAnalysis scanResult={scanResult} onCopyText={copyToClipboard} />
+
                       {/* 3. 🔍 VERFAHRENS- & FORMFEHLER-CHECK (DIE "SCHLUPFLÖCHER") */}
                       <div id="section_verfahrenscheck" className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
                         <div className="flex items-center gap-3 border-b border-zinc-800 pb-3 mb-4">
@@ -3462,6 +3597,30 @@ export default function App() {
                         />
                       </div>
 
+                      {!currentUser ? (
+                        <div>
+                          <label className="block text-[10px] font-mono text-amber-400 uppercase mb-1 font-bold flex items-center justify-between">
+                            <span>Wunsch-Passwort (für Kundenkonto-Erstellung)</span>
+                            <span className="text-[9px] text-zinc-400 font-normal">Optional</span>
+                          </label>
+                          <input
+                            type="password"
+                            value={paymentPassword}
+                            onChange={(e) => setPaymentPassword(e.target.value)}
+                            placeholder="Mindestens 6 Zeichen (z.B. ••••••••)"
+                            className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                          />
+                          <p className="text-[10px] text-zinc-400 mt-1">
+                            💡 Wenn Sie ein Passwort vergeben, wird beim Kauf automatisch Ihr Kundenkonto erstellt, um das Abo dauerhaft auf allen Geräten zu sichern.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>Abo wird direkt mit Ihrem Konto ({currentUser.email}) verknüpft.</span>
+                        </div>
+                      )}
+
                       {paymentMethod === "card" && (
                         <>
                           <div>
@@ -3756,6 +3915,14 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Login & Register Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authModalMode}
+        titleNotice={authModalNotice}
+      />
     </div>
   );
 }
