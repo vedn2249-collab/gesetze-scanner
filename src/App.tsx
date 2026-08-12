@@ -3885,9 +3885,12 @@ export default function App() {
 
                 <div>
                   <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">2. Verantwortliche Stelle</h4>
-                  <p className="mt-1">
-                    Gesetzes-Scanner GmbH, Friedrichstraße 95, 10117 Berlin.<br/>
-                    E-Mail: datenschutz@gesetzes-scanner.de
+                  <p className="mt-1 leading-relaxed">
+                    Vedat Kurt<br/>
+                    SİDE MAH. 1549_1 SK. ASIM BEY APT. 2 SİTESİ NO: 14 İÇ KAPI NO: 8<br/>
+                    07600 Manavgat Side Antalya / Türkei<br/>
+                    E-Mail: vedn2249@gmail.com<br/>
+                    Telefon: 05436070792
                   </p>
                 </div>
 
