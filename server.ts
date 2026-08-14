@@ -582,20 +582,103 @@ Benutzeranfrage zum Verkehrsrecht:
   }
 });
 
-// API route to create a Stripe or gateway payment session for revenue generation
+// API route to create a Paddle, Stripe, or instant gateway payment session for revenue generation
 app.post("/api/create-checkout-session", async (req, res) => {
   const { planType, email } = req.body || {};
 
-  const prices: Record<string, { amount: number; name: string; mode: string }> = {
-    gesetze_yearly: { amount: 499, name: "Gesetzes-Scanner 1-Jahres-Abo", mode: "subscription" },
-    gesetze_lifetime: { amount: 1999, name: "Gesetzes-Scanner Lebenslanger Zugang", mode: "payment" },
-    traffic_yearly: { amount: 499, name: "StVO Verkehrsmittel-Scanner 1-Jahres-Abo", mode: "subscription" },
-    traffic_lifetime: { amount: 1999, name: "StVO Verkehrsmittel-Scanner Lebenslanger Zugang", mode: "payment" },
-    schriftsatz_single: { amount: 999, name: "Prüfungsfertiges Schriftsatz-Modul (1x Nutzung)", mode: "payment" },
+  const prices: Record<string, { amount: number; name: string; mode: string; paddleEnvKey: string; stripeEnvKey: string }> = {
+    // Gesetzes-Scanner Hauptbereich
+    allgemein_annual: { amount: 499, name: "Gesetzes-Scanner 1-Jahres-Abo", mode: "subscription", paddleEnvKey: "PADDLE_PRICE_GESETZE_YEARLY", stripeEnvKey: "STRIPE_PRICE_GESETZE_YEARLY" },
+    allgemein_lifetime: { amount: 1999, name: "Gesetzes-Scanner Lebenslanger Zugang", mode: "payment", paddleEnvKey: "PADDLE_PRICE_GESETZE_LIFETIME", stripeEnvKey: "STRIPE_PRICE_GESETZE_LIFETIME" },
+    gesetze_yearly: { amount: 499, name: "Gesetzes-Scanner 1-Jahres-Abo", mode: "subscription", paddleEnvKey: "PADDLE_PRICE_GESETZE_YEARLY", stripeEnvKey: "STRIPE_PRICE_GESETZE_YEARLY" },
+    gesetze_lifetime: { amount: 1999, name: "Gesetzes-Scanner Lebenslanger Zugang", mode: "payment", paddleEnvKey: "PADDLE_PRICE_GESETZE_LIFETIME", stripeEnvKey: "STRIPE_PRICE_GESETZE_LIFETIME" },
+
+    // StVO Verkehrsmittel-Scanner
+    traffic_annual: { amount: 499, name: "StVO Verkehrsmittel-Scanner 1-Jahres-Abo", mode: "subscription", paddleEnvKey: "PADDLE_PRICE_TRAFFIC_YEARLY", stripeEnvKey: "STRIPE_PRICE_TRAFFIC_YEARLY" },
+    traffic_lifetime: { amount: 1999, name: "StVO Verkehrsmittel-Scanner Lebenslanger Zugang", mode: "payment", paddleEnvKey: "PADDLE_PRICE_TRAFFIC_LIFETIME", stripeEnvKey: "STRIPE_PRICE_TRAFFIC_LIFETIME" },
+    traffic_yearly: { amount: 499, name: "StVO Verkehrsmittel-Scanner 1-Jahres-Abo", mode: "subscription", paddleEnvKey: "PADDLE_PRICE_TRAFFIC_YEARLY", stripeEnvKey: "STRIPE_PRICE_TRAFFIC_YEARLY" },
+
+    // 4 separate Schriftsatz-Module
+    schriftsatz_berufung: { amount: 999, name: "Prüfungsfertiger Berufungsschriftsatz (1x Freischaltung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_BERUFUNG", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_BERUFUNG" },
+    schriftsatz_revision: { amount: 999, name: "Prüfungsfertige Revisionsbegründung (1x Freischaltung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_REVISION", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_REVISION" },
+    schriftsatz_wiederaufnahme: { amount: 999, name: "Prüfungsfertiger Wiederaufnahmeantrag (1x Freischaltung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_WIEDERAUFNAHME", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_WIEDERAUFNAHME" },
+    schriftsatz_verfassungsbeschwerde: { amount: 999, name: "Prüfungsfertige Verfassungsbeschwerde (1x Freischaltung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_VERFASSUNGSBESCHWERDE", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_VERFASSUNGSBESCHWERDE" },
+    schriftsatz_single: { amount: 999, name: "Prüfungsfertiges Schriftsatz-Modul (1x Nutzung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_BERUFUNG", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_BERUFUNG" },
   };
 
-  const selected = prices[planType] || prices.gesetze_yearly;
+  const selected = prices[planType] || prices.allgemein_annual;
 
+  // 1. PADDLE BILLING INTEGRATION
+  const paddleApiKey = process.env.PADDLE_API_KEY;
+  const paddlePriceId = process.env[selected.paddleEnvKey];
+
+  if (paddleApiKey) {
+    try {
+      const isSandbox = process.env.PADDLE_ENVIRONMENT === "sandbox";
+      const paddleApiUrl = isSandbox
+        ? "https://sandbox-api.paddle.com/transactions"
+        : "https://api.paddle.com/transactions";
+
+      const origin = req.headers.origin || "http://localhost:3000";
+      const returnUrl = `${origin}?payment_success=true&plan=${planType}`;
+
+      const payload: any = {
+        items: [
+          paddlePriceId
+            ? { price_id: paddlePriceId, quantity: 1 }
+            : {
+                price: {
+                  description: selected.name,
+                  unit_price: {
+                    amount: selected.amount.toString(),
+                    currency_code: "EUR",
+                  },
+                  product: {
+                    name: selected.name,
+                    tax_category: "standard",
+                  },
+                },
+                quantity: 1,
+              },
+        ],
+        checkout: {
+          url: returnUrl,
+        },
+      };
+
+      if (email && email.includes("@")) {
+        payload.customer = { email };
+      }
+
+      const paddleRes = await fetch(paddleApiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paddleApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (paddleRes.ok) {
+        const paddleData = await paddleRes.json();
+        const checkoutUrl = paddleData.data?.checkout?.url;
+        if (checkoutUrl) {
+          return res.json({
+            checkoutUrl,
+            transactionId: paddleData.data?.id,
+            provider: "paddle",
+          });
+        }
+      } else {
+        const errorText = await paddleRes.text();
+        console.warn("Paddle API response error:", errorText);
+      }
+    } catch (paddleErr) {
+      console.warn("Paddle integration error, falling back:", paddleErr);
+    }
+  }
+
+  // 2. STRIPE INTEGRATION (FALLBACK)
   try {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
     if (stripeKey) {
@@ -624,12 +707,13 @@ app.post("/api/create-checkout-session", async (req, res) => {
         cancel_url: `${req.headers.origin || "http://localhost:3000"}?payment_cancelled=true`,
       });
 
-      return res.json({ checkoutUrl: session.url, sessionId: session.id });
+      return res.json({ checkoutUrl: session.url, sessionId: session.id, provider: "stripe" });
     }
   } catch (err) {
     console.warn("Stripe Checkout Session Error (using instant gateway fallback):", err);
   }
 
+  // 3. INSTANT DEMO / GATEWAY FALLBACK (wenn noch keine Live-Keys eingetragen sind)
   const txnId = `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
   return res.json({
     success: true,
