@@ -3306,35 +3306,40 @@ export default function App() {
         <p className="text-xs font-display font-medium text-zinc-500 tracking-wider">
           GESETZES-SCANNER • AUTOMATISIERTE DOKUMENTEN- & TEXTANALYSE-SOFTWARE
         </p>
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-400">
-          <button 
-            onClick={() => setShowImpressumModal(true)} 
-            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+        {/* Echte HTML-Links (<a href="...">) für Paddle Crawler & Bots */}
+        <nav aria-label="Rechtliche Pflichtangaben" className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-400">
+          <a 
+            href="/impressum" 
+            onClick={(e) => { e.preventDefault(); setShowImpressumModal(true); window.history.pushState({}, '', '/impressum'); }} 
+            className="hover:text-amber-400 transition-colors underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Impressum (Legal Notice)
-          </button>
+          </a>
           <span className="text-zinc-800 hidden sm:inline">|</span>
-          <button 
-            onClick={() => setShowDatenschutzModal(true)} 
-            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+          <a 
+            href="/datenschutz" 
+            onClick={(e) => { e.preventDefault(); setShowDatenschutzModal(true); window.history.pushState({}, '', '/datenschutz'); }} 
+            className="hover:text-amber-400 transition-colors underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Datenschutz (Privacy Policy)
-          </button>
+          </a>
           <span className="text-zinc-800 hidden sm:inline">|</span>
-          <button 
-            onClick={() => setShowTermsModal(true)} 
-            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+          <a 
+            href="/terms" 
+            onClick={(e) => { e.preventDefault(); setShowTermsModal(true); window.history.pushState({}, '', '/terms'); }} 
+            className="hover:text-amber-400 transition-colors underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Nutzungsbedingungen (Terms of Service)
-          </button>
+          </a>
           <span className="text-zinc-800 hidden sm:inline">|</span>
-          <button 
-            onClick={() => setShowRefundsModal(true)} 
-            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+          <a 
+            href="/refunds" 
+            onClick={(e) => { e.preventDefault(); setShowRefundsModal(true); window.history.pushState({}, '', '/refunds'); }} 
+            className="hover:text-amber-400 transition-colors underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Rückerstattungsrichtlinie (Refund Policy)
-          </button>
-        </div>
+          </a>
+        </nav>
         <p className="text-[10px] text-zinc-600 mt-4 font-mono">
           System-Status: Aktiv • Verschlüsselung: AES-256 • IP-Logging: Deaktiviert
         </p>
@@ -4125,30 +4130,30 @@ export default function App() {
 
               <div className="space-y-4 text-xs text-zinc-300 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
                 <div>
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">1. Digitale Dienstleistungen</h4>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">1. Gesetzliches 14-tägiges Widerrufsrecht bei ungenutzten Leistungen</h4>
                   <p className="mt-1 leading-relaxed text-zinc-300">
-                    Da es sich bei dem Gesetze-Scanner um einen digitalen und sofort verfügbaren KI-Dienst handelt, wird die Analyse unmittelbar nach Absenden der Anfrage generiert.
+                    Haben Sie einen Zugang, Credits oder ein Abonnement erworben und den Dienst <strong>noch nicht in Anspruch genommen</strong> (keine Dokumente analysiert, keine Scans oder Workflows gestartet), steht Ihnen das gesetzliche 14-tägige Widerrufsrecht ab Kaufdatum uneingeschränkt zu. Sie erhalten in diesem Fall den vollen Kaufpreis erstattet.
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">2. Widerrufsrecht</h4>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">2. Vorzeitiges Erlöschen des Widerrufsrechts bei Nutzung digitaler Dienste (§ 356 Abs. 5 BGB)</h4>
                   <p className="mt-1 leading-relaxed text-zinc-300">
-                    Mit der Ausführung des Sofort-Scans stimmt der Nutzer ausdrücklich zu, dass die Ausführung vor Ablauf der Widerrufsfrist beginnt, wodurch das gesetzliche Widerrufsrecht für digitale Inhalte erlischt.
+                    Sobald Sie eine Dokumentenanalyse oder einen Scan starten, wird die digitale Dienstleistung unmittelbar und vollständig erbracht. Sie stimmen mit dem Start der Analyse ausdrücklich zu, dass mit der Ausführung vor Ablauf der Widerrufsfrist begonnen wird. <strong>Mit Beginn und Ausführung der Analyse erlischt das 14-tägige Widerrufsrecht für digitale Inhalte vorzeitig.</strong> Ein nachträglicher Widerruf oder eine Rückerstattung nach erfolgter Analyse ist ausgeschlossen, um Missbrauch zu verhindern.
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">3. Rückerstattungen</h4>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">3. Rückerstattungen nach Leistungserbringung</h4>
                   <p className="mt-1 leading-relaxed text-zinc-300">
-                    Alle Verkäufe von Credits, Scans oder Abonnements sind grundsätzlich final und non-refundable (nicht erstattungsfähig).
+                    Nach erfolgreicher Bereitstellung der Software-Ergebnisse sind Verkäufe grundsätzlich final und nicht erstattungsfähig (non-refundable).
                   </p>
                 </div>
 
                 <div className="border-t border-zinc-900 pt-3">
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">4. Ausnahmen & Support</h4>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">4. Technische Störungen & Support</h4>
                   <p className="mt-1 leading-relaxed text-zinc-300">
-                    Sollte es zu einem nachweisbaren technischen Systemfehler seitens unserer Plattform kommen, bei dem keine Leistung erbracht wurde, wenden Sie sich bitte per E-Mail an den Support (<span className="text-amber-400 font-mono">vedn2249@gmail.com</span>), um eine Einzelfallprüfung zu veranlassen.
+                    Sollte es zu einem nachweisbaren technischen Systemausfall seitens unserer Server kommen, bei dem keine Analyse generiert wurde, wenden Sie sich bitte per E-Mail an unseren Support (<span className="text-amber-400 font-mono">vedn2249@gmail.com</span>) zur Einzelfallprüfung und Erstattung bzw. Gutschrift.
                   </p>
                 </div>
               </div>
