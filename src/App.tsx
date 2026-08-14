@@ -3306,33 +3306,33 @@ export default function App() {
         <p className="text-xs font-display font-medium text-zinc-500 tracking-wider">
           GESETZES-SCANNER • AUTOMATISIERTE DOKUMENTEN- & TEXTANALYSE-SOFTWARE
         </p>
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-500">
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-400">
           <button 
             onClick={() => setShowImpressumModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
-            Impressum
+            Impressum (Legal Notice)
           </button>
           <span className="text-zinc-800 hidden sm:inline">|</span>
           <button 
             onClick={() => setShowDatenschutzModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
-            Datenschutz
+            Datenschutz (Privacy Policy)
           </button>
           <span className="text-zinc-800 hidden sm:inline">|</span>
           <button 
             onClick={() => setShowTermsModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
-            AGB / Nutzungsbedingungen
+            Nutzungsbedingungen (Terms of Service)
           </button>
           <span className="text-zinc-800 hidden sm:inline">|</span>
           <button 
             onClick={() => setShowRefundsModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
-            Rückerstattungsrichtlinie
+            Rückerstattungsrichtlinie (Refund Policy)
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 mt-4 font-mono">
