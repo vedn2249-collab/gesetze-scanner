@@ -635,6 +635,28 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Check for URL hash or path on load to directly open legal modals (/terms, /refunds, /impressum, /datenschutz)
+  useEffect(() => {
+    const handleUrlRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      
+      if (path === "/terms" || path === "/agb" || hash === "#terms" || hash === "#agb") {
+        setShowTermsModal(true);
+      } else if (path === "/refunds" || path === "/refund" || hash === "#refunds" || hash === "#refund") {
+        setShowRefundsModal(true);
+      } else if (path === "/impressum" || hash === "#impressum") {
+        setShowImpressumModal(true);
+      } else if (path === "/datenschutz" || path === "/privacy" || hash === "#datenschutz" || hash === "#privacy") {
+        setShowDatenschutzModal(true);
+      }
+    };
+
+    handleUrlRoute();
+    window.addEventListener("hashchange", handleUrlRoute);
+    return () => window.removeEventListener("hashchange", handleUrlRoute);
+  }, []);
+
   // Dedicated Schriftsatz & Fristen State
   const [customDeliveryDate, setCustomDeliveryDate] = useState("");
   const [customCourtFileNo, setCustomCourtFileNo] = useState("");
@@ -836,9 +858,11 @@ export default function App() {
   const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
   const [copiedTemplateId, setCopiedTemplateId] = useState<string | null>(null);
 
-  // Impressum & Datenschutz modal states
+  // Impressum, Datenschutz, AGB / Terms & Rückerstattung / Refunds modal states
   const [showImpressumModal, setShowImpressumModal] = useState(false);
   const [showDatenschutzModal, setShowDatenschutzModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showRefundsModal, setShowRefundsModal] = useState(false);
 
   // 24/7 Law Radar & Eil-Warnungen State
   const [lawAlerts, setLawAlerts] = useState<LawAlert[]>([
@@ -3242,19 +3266,33 @@ export default function App() {
         <p className="text-xs font-display font-medium text-zinc-500 tracking-wider">
           GESETZES-SCANNER • SEIT 2026 EIN VERLÄSSLICHER PARTNER FÜR IHRE RECHTE.
         </p>
-        <div className="flex justify-center gap-6 mt-4 text-[11px] font-mono text-zinc-500">
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-500">
           <button 
             onClick={() => setShowImpressumModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Impressum
           </button>
-          <span className="text-zinc-800">|</span>
+          <span className="text-zinc-800 hidden sm:inline">|</span>
           <button 
             onClick={() => setShowDatenschutzModal(true)} 
             className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
           >
             Datenschutz
+          </button>
+          <span className="text-zinc-800 hidden sm:inline">|</span>
+          <button 
+            onClick={() => setShowTermsModal(true)} 
+            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+          >
+            AGB / Nutzungsbedingungen
+          </button>
+          <span className="text-zinc-800 hidden sm:inline">|</span>
+          <button 
+            onClick={() => setShowRefundsModal(true)} 
+            className="hover:text-amber-400 transition-colors cursor-pointer underline decoration-zinc-800 underline-offset-4 hover:decoration-amber-400/50"
+          >
+            Rückerstattungsrichtlinie
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 mt-4 font-mono">
@@ -3713,7 +3751,23 @@ export default function App() {
                         className="mt-0.5 accent-amber-400 w-4 h-4 cursor-pointer shrink-0"
                       />
                       <p className="text-[10px] text-zinc-300 leading-normal select-none">
-                        Ich stimme ausdrücklich zu, dass Sie vor Ablauf der Widerrufsfrist mit der Ausführung des Vertrags beginnen. Ich verlange und bestätige die kostenpflichtige Bestellung ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr mit 12 Monaten Mindestlaufzeit" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 € einmalig" : "9,99 € pro Schriftsatz-Erstellung"}).
+                        Ich stimme ausdrücklich zu, dass Sie vor Ablauf der Widerrufsfrist mit der Ausführung des Vertrags beginnen. Ich akzeptiere die{" "}
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
+                          className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                        >
+                          AGB
+                        </button>{" "}
+                        sowie die{" "}
+                        <button 
+                          type="button" 
+                          onClick={(e) => { e.stopPropagation(); setShowRefundsModal(true); }}
+                          className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                        >
+                          Rückerstattungsrichtlinie
+                        </button>{" "}
+                        und verlange und bestätige die kostenpflichtige Bestellung ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr mit 12 Monaten Mindestlaufzeit" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 € einmalig" : "9,99 € pro Schriftsatz-Erstellung"}).
                       </p>
                     </div>
 
@@ -3912,6 +3966,149 @@ export default function App() {
                   <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">5. Ihre Rechte gemäß DSGVO</h4>
                   <p className="mt-1 leading-relaxed">
                     Sie haben das Recht auf unentgeltliche Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten personenbezogenen Daten. Da wir keine Profile speichern, können Sie jederzeit die Löschung flüchtiger Sitzungsdaten verlangen.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AGB & Nutzungsbedingungen Modal (/terms) */}
+      <AnimatePresence>
+        {showTermsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowTermsModal(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg p-6 overflow-hidden relative shadow-gold-glow z-10 text-left"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500"></div>
+              
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="font-display font-extrabold text-xl text-white tracking-tight">Nutzungsbedingungen / AGB</h3>
+                  <p className="text-[11px] font-mono text-zinc-500">Allgemeine Geschäftsbedingungen für Gesetze-Scanner</p>
+                </div>
+                <button 
+                  onClick={() => setShowTermsModal(false)}
+                  className="text-zinc-400 hover:text-white p-1 rounded-full bg-zinc-900 border border-zinc-800 transition-all cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs text-zinc-300 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">1. Geltungsbereich</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Diese Nutzungsbedingungen gelten für die Nutzung der Web-Applikation „Gesetze-Scanner“ (nachfolgend „Dienst“). Betreiber ist Vedat Kurt.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">2. Leistungsbeschreibung</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Der Dienst bietet KI-gestützte Analysen und Ersteinschätzungen zu rechtlichen Fragestellungen. Die Analysen werden automatisiert erstellt.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">3. Haftungsausschluss</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Die bereitgestellten Inhalte und Scans stellen keine professionelle Rechtsberatung dar und ersetzen keinen Rechtsanwalt. Eine Haftung für die Richtigkeit, Vollständigkeit oder Aktualität der KI-Auswertungen ist ausgeschlossen. Die Nutzung erfolgt auf eigenes Risiko.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">4. Nutzungsrecht</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Mit dem Erwerb von Guthaben oder Abonnements erhält der Nutzer das persönliche, nicht übertragbare Recht, den Dienst im Rahmen der Plattform zu nutzen.
+                  </p>
+                </div>
+
+                <div className="border-t border-zinc-900 pt-3">
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">5. Betreiber & Kontakt</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-400">
+                    Vedat Kurt<br/>
+                    SİDE MAH. 1549_1 SK. ASIM BEY APT. 2 SİTESİ NO: 14 İÇ KAPI NO: 8<br/>
+                    07600 Manavgat Side Antalya / Türkei<br/>
+                    E-Mail: <span className="text-amber-400 font-mono">vedn2249@gmail.com</span><br/>
+                    Telefon: 05436070792
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Rückerstattungsrichtlinie Modal (/refunds) */}
+      <AnimatePresence>
+        {showRefundsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowRefundsModal(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg p-6 overflow-hidden relative shadow-gold-glow z-10 text-left"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500"></div>
+              
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="font-display font-extrabold text-xl text-white tracking-tight">Rückerstattungsrichtlinie</h3>
+                  <p className="text-[11px] font-mono text-zinc-500">Rückerstattungs- und Stornierungsrichtlinie</p>
+                </div>
+                <button 
+                  onClick={() => setShowRefundsModal(false)}
+                  className="text-zinc-400 hover:text-white p-1 rounded-full bg-zinc-900 border border-zinc-800 transition-all cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs text-zinc-300 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">1. Digitale Dienstleistungen</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Da es sich bei dem Gesetze-Scanner um einen digitalen und sofort verfügbaren KI-Dienst handelt, wird die Analyse unmittelbar nach Absenden der Anfrage generiert.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">2. Widerrufsrecht</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Mit der Ausführung des Sofort-Scans stimmt der Nutzer ausdrücklich zu, dass die Ausführung vor Ablauf der Widerrufsfrist beginnt, wodurch das gesetzliche Widerrufsrecht für digitale Inhalte erlischt.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">3. Rückerstattungen</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Alle Verkäufe von Credits, Scans oder Abonnements sind grundsätzlich final und non-refundable (nicht erstattungsfähig).
+                  </p>
+                </div>
+
+                <div className="border-t border-zinc-900 pt-3">
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">4. Ausnahmen & Support</h4>
+                  <p className="mt-1 leading-relaxed text-zinc-300">
+                    Sollte es zu einem nachweisbaren technischen Systemfehler seitens unserer Plattform kommen, bei dem keine Leistung erbracht wurde, wenden Sie sich bitte per E-Mail an den Support (<span className="text-amber-400 font-mono">vedn2249@gmail.com</span>), um eine Einzelfallprüfung zu veranlassen.
                   </p>
                 </div>
               </div>
