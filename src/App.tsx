@@ -1500,6 +1500,14 @@ export default function App() {
             />
           </div>
 
+          {/* Legal Disclaimer Box in Schriftsatz Module */}
+          <div className="p-3 mb-5 rounded-xl bg-black/60 border border-zinc-800/80 text-[11px] text-zinc-400 flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <p className="leading-normal">
+              <strong className="text-zinc-300">Hinweis:</strong> Rein technische Software-Vorlage zur Vorbereitung von Dokumenten. Keine Rechtsberatung oder behördliche Dienstleistung. Die inhaltliche Prüfung verbleibt beim Anwender.
+            </p>
+          </div>
+
           {/* Action Trigger Button */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
@@ -1658,21 +1666,38 @@ export default function App() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900/50 mb-3 text-xs tracking-widest text-zinc-400 font-mono">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            GESETZES-SCANNER v4.1 • SECURE CHANNELS
+            GESETZES-SCANNER • TECHNISCHE DOKUMENTEN- & TEXTANALYSE
           </div>
           
           {/* Metallic & Gold Title pairing */}
-          <h1 id="app_title" className="text-4xl md:text-5xl font-display font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-100 bg-clip-text text-transparent drop-shadow-md">
+          <h1 id="app_title" className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-100 bg-clip-text text-transparent drop-shadow-md leading-none">
             GESETZES-SCANNER
           </h1>
-          <p className="mt-2 text-sm md:text-base tracking-widest text-amber-400 uppercase font-display font-medium animate-gold-pulse">
-            Verfahrens-Schutz & Beschuldigten-Rechte
-          </p>
-          <p className="mt-2 text-xs md:text-sm text-zinc-500 max-w-lg mx-auto">
-            Strategische Schadensbegrenzung, Taktiken zur Verfahrenseinstellung und proaktive Erkennung von Behördenfehlern.
+          <h2 className="mt-3 text-lg sm:text-xl md:text-2xl font-display font-bold tracking-tight text-amber-400">
+            Das technische Tool zur Dokumenten- und Textanalyse
+          </h2>
+          <p className="mt-3 text-xs sm:text-sm md:text-base text-zinc-300 max-w-2xl mx-auto leading-relaxed">
+            Automatisierte Software-Lösung zur effizienten Textstrukturierung, Fristenberechnung und Formatierung von Dokumenten. Optimieren Sie Ihre Workflows durch rein technische Datenanalyse.
           </p>
         </div>
       </header>
+
+      {/* Prominent Legal Disclaimer Banner (Gut sichtbar platziert für Paddle-Prüfung & Nutzer-Klarheit) */}
+      <div className="max-w-4xl mx-auto px-4 mt-6">
+        <div className="p-4 sm:p-5 rounded-2xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-zinc-950 to-amber-950/30 shadow-gold-glow text-left">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <h4 className="font-mono font-extrabold text-amber-400 uppercase text-xs tracking-wide">
+                Wichtiger rechtlicher Hinweis:
+              </h4>
+              <p className="text-zinc-300 text-xs leading-relaxed font-sans">
+                Der Gesetze-Scanner ist eine rein technische Software-Anwendung zur automatisierten Text- und Dokumentenanalyse. Die Anwendung bietet zu keinem Zeitpunkt eine Rechtsberatung, juristische Prüfungen oder behördliche Dienstleistungen an und trifft keinerlei rechtsverbindliche Entscheidungen über natürliche Personen. Alle generierten Ergebnisse dienen ausschließlich der technischen Textverarbeitung und Vorbereitung. Die Verantwortung für die inhaltliche und rechtliche Prüfung von Dokumenten verbleibt voll und ganz beim Anwender.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Top Unwetter-Style Emergency Law Alert Banner for Subscribers */}
       {!dismissedEmergencyBanner && lawAlerts.some((a) => a.severity === "CRITICAL") && (
@@ -3261,10 +3286,25 @@ export default function App() {
 
       </main>
 
-      {/* Footer Branding Slogan */}
-      <footer className="max-w-4xl mx-auto px-4 mt-16 text-center border-t border-zinc-900 pt-8 pb-12">
+      {/* Footer Branding Slogan & Prominent Disclaimer */}
+      <footer className="max-w-4xl mx-auto px-4 mt-16 text-center border-t border-zinc-900 pt-8 pb-12 space-y-6">
+        {/* Footer Disclaimer Box */}
+        <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/80 text-left">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <span className="font-mono font-bold text-amber-400 uppercase text-[10px] tracking-wider block">
+                Wichtiger rechtlicher Hinweis:
+              </span>
+              <p className="text-zinc-400 text-[11px] leading-relaxed">
+                Der Gesetze-Scanner ist eine rein technische Software-Anwendung zur automatisierten Text- und Dokumentenanalyse. Die Anwendung bietet zu keinem Zeitpunkt eine Rechtsberatung, juristische Prüfungen oder behördliche Dienstleistungen an und trifft keinerlei rechtsverbindliche Entscheidungen über natürliche Personen. Alle generierten Ergebnisse dienen ausschließlich der technischen Textverarbeitung und Vorbereitung. Die Verantwortung für die inhaltliche und rechtliche Prüfung von Dokumenten verbleibt voll und ganz beim Anwender.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <p className="text-xs font-display font-medium text-zinc-500 tracking-wider">
-          GESETZES-SCANNER • SEIT 2026 EIN VERLÄSSLICHER PARTNER FÜR IHRE RECHTE.
+          GESETZES-SCANNER • AUTOMATISIERTE DOKUMENTEN- & TEXTANALYSE-SOFTWARE
         </p>
         <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-4 text-[11px] font-mono text-zinc-500">
           <button 

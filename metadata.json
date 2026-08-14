@@ -1,6 +1,6 @@
 {
   "name": "Gesetzes-Scanner",
-  "description": "Premium-Modul für Verfahrens-Schutz & Beschuldigten-Rechte. Bietet sofortige taktische Orientierung und Schadensminimierung.",
+  "description": "Das technische Tool zur Dokumenten- und Textanalyse. Automatisierte Software-Lösung zur effizienten Textstrukturierung, Fristenberechnung und Formatierung von Dokumenten.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
