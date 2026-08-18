@@ -1,5 +1,14 @@
 export type ActiveTab = 
   | "verfahrens_schutz" 
+  | "mock_trial"
+  | "kosten_finanzen"
+  | "fristen_kalender"
+  | "akten_navigator"
+  | "rechtsprechungs_radar"
+  | "audio_tool"
+  | "ki_coach"
+  | "selbstvertreter_leitfaden"
+  | "anwalts_suche"
   | "berufung" 
   | "revision" 
   | "wiederaufnahme" 
@@ -153,6 +162,99 @@ export interface VerifiedRagNormCitation {
   elementsChecked: string[];
 }
 
+export interface SubsumptionElement {
+  featureName: string;
+  isFulfilled: boolean;
+  burdenOfProof: string; // "Kläger" | "Beklagter" | "Staatsanwaltschaft" | "Behörde"
+  evidenceStatus: string; // "Voll bewiesen" | "Streitig" | "Unbewiesen" | "Anscheinsbeweis"
+  subsumption: string;
+}
+
+export interface SubsumptionChecklist {
+  normCode: string;
+  elements: SubsumptionElement[];
+  overallResult: boolean;
+}
+
+export interface CostCalculationResult {
+  streitwert: number;
+  courtFeesGKG: number;
+  lawyerFeesRVG: number;
+  totalOwnRisk: number;
+  opponentRisk: number;
+  maxCostExposure: number;
+  insuranceCovered: number;
+  trafficLight: "GREEN" | "YELLOW" | "RED";
+  verdict: string;
+}
+
+export interface MockTrialStatement {
+  role: "RICHTER" | "GEGNER" | "VERTEIDIGER";
+  speaker: string;
+  argument: string;
+  riskScore: number; // 1-10
+}
+
+export interface MockTrialSimulation {
+  caseSummary: string;
+  dialogue: MockTrialStatement[];
+  judicialTendency: string;
+}
+
+export interface TacticalTiming {
+  optimalFilingDate: string;
+  timingStrategy: string;
+  toneAnalysis: string;
+  escalationScore: number; // 1-10
+}
+
+export interface TrickClauseFinding {
+  clauseText: string;
+  violatedNorm: string;
+  bghPrecedent: string;
+  isInvalid: boolean;
+  userAdvantage: string;
+}
+
+export interface StatuteOfLimitations {
+  claimOriginDate: string;
+  regularExpiryDate: string; // 31.12. des 3. Jahres (§§ 195, 199 BGB)
+  maxExpiryDate: string; // 10 bzw. 30 Jahre
+  isStatuteBarred: boolean;
+  applicableNorm: string;
+  interruptionEvents: string[]; // z.B. Mahnbescheid, Verhandlungen § 203 BGB
+}
+
+export interface EvidenceItem {
+  name: string;
+  type: "URKUNDE" | "ZEUGE" | "SACHVERSTÄNDIGER" | "AUGENSCHEIN" | "PARTEIVERNEHMUNG";
+  grade: number; // 1 (Sehr gut) bis 6 (Ungenügend)
+  burdenOfProofFit: boolean;
+  recommendation: string;
+}
+
+export interface EmotionalCheckResult {
+  detectedAggressivePhrases: string[];
+  suggestedNeutralPhrases: string[];
+  deescalationScore: number; // 1-10
+}
+
+export interface MonteCarloSimulation {
+  simulatedRuns: number; // z.B. 100
+  winRatePercent: number; // z.B. 68%
+  settlementRatePercent: number; // z.B. 22%
+  lossRatePercent: number; // z.B. 10%
+  expectedValueEur: number;
+}
+
+export interface PkhCalculationResult {
+  isEligible: boolean;
+  netIncomeEur: number;
+  allowanceTotalEur: number;
+  monthlyInstallmentEur: number; // 0 = Ratenfreie PKH
+  verdict: string;
+}
+
 export interface ScanResult {
   sofortmassnahme: string;
   premium_teaser: string;
@@ -168,6 +270,21 @@ export interface ScanResult {
   deadline_calc?: DeadlineCalculation;
   mustertext_template?: string;
   full_schriftsatz?: FullSchriftsatzResult;
+  // Advanced Power Features
+  subsumption_check?: SubsumptionChecklist;
+  cost_calculation?: CostCalculationResult;
+  mock_trial?: MockTrialSimulation;
+  tactical_timing?: TacticalTiming;
+  trick_clauses?: TrickClauseFinding[];
+  markdown_with_rn?: string;
+  confidence_score?: number; // 0.0 - 1.0
+  confidence_warning?: string;
+  // Features 26-50 Extensions
+  statute_of_limitations?: StatuteOfLimitations;
+  evidence_ranking?: EvidenceItem[];
+  emotional_check?: EmotionalCheckResult;
+  monte_carlo?: MonteCarloSimulation;
+  pkh_calculation?: PkhCalculationResult;
 }
 
 export interface LawEntry {

@@ -18,9 +18,27 @@ import {
   ExternalLink,
   BookCheck,
   Check,
-  Database
+  Database,
+  Calendar,
+  DollarSign,
+  AlertCircle,
+  Gavel,
+  BadgeAlert,
+  SendHorizontal
 } from 'lucide-react';
-import { ScanResult, PrecedentCase, TacticalStep, OpposingArgument, SuccessPrognosis, DeadlineCalculation, VerifiedRagNormCitation } from '../types';
+import { 
+  ScanResult, 
+  PrecedentCase, 
+  TacticalStep, 
+  OpposingArgument, 
+  SuccessPrognosis, 
+  DeadlineCalculation, 
+  VerifiedRagNormCitation,
+  SubsumptionChecklist,
+  CostCalculationResult,
+  TacticalTiming
+} from '../types';
+import { calculateLegalCosts, downloadDeadlineICSFile, downloadBeAXmlFile } from '../legalTools';
 
 interface PowerLegalAnalysisProps {
   scanResult: ScanResult;
@@ -31,6 +49,47 @@ export default function PowerLegalAnalysis({ scanResult, onCopyText }: PowerLega
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [showAllPrecedents, setShowAllPrecedents] = useState(false);
   const [expandedNormIdx, setExpandedNormIdx] = useState<number | null>(0);
+  const [customStreitwert, setCustomStreitwert] = useState<number>(5000);
+  const [hasInsurance, setHasInsurance] = useState<boolean>(false);
+  const [deductible, setDeductible] = useState<number>(150);
+
+  // Dynamic RVG Cost Calculation
+  const costCalc: CostCalculationResult = scanResult.cost_calculation || calculateLegalCosts(
+    customStreitwert,
+    hasInsurance,
+    deductible,
+    true
+  );
+
+  // Tactical Timing Data
+  const tacticalTiming: TacticalTiming = scanResult.tactical_timing || {
+    optimalFilingDate: "Vorletzter Tag vor Fristablauf (23:59 Uhr)",
+    timingStrategy: "Widerspruch bzw. Rechtsmittel bewusst spät einreichen, um eine vorzeitige formelle Nachbesserung durch die Behörde oder den Vermieter vor Ablauf der Notfrist zu blockieren.",
+    toneAnalysis: "FORMELLES STANDARDSCHREIBEN MIT ESKALATIONS-POTENZIAL",
+    escalationScore: 6
+  };
+
+  // Subsumptions-Matrix
+  const subsumption: SubsumptionChecklist = scanResult.subsumption_check || {
+    normCode: scanResult.verified_rag_norms?.[0]?.code || "§ 573 BGB / § 136 StPO",
+    overallResult: false,
+    elements: [
+      {
+        featureName: "Formelle Bestimmtheit & Begründungstiefe",
+        isFulfilled: false,
+        burdenOfProof: "Gegenseite / Behörde",
+        evidenceStatus: "Unzureichend dargelegt",
+        subsumption: "Das gegnerische Schreiben enthält lediglich pauschale Textbausteine ohne substantiierte Begründung."
+      },
+      {
+        featureName: "Zulässigkeit & Fristwahrung",
+        isFulfilled: true,
+        burdenOfProof: "Antragsteller / Beschuldigter",
+        evidenceStatus: "Voll bewiesen",
+        subsumption: "Die Rechtsmittelfrist ist noch aktiv; das Zustellungsdatum ist durch Postaufgabedatum belegbar."
+      }
+    ]
+  };
 
   // Verified RAG Norms from live pipeline or fallback
   const verifiedNorms: VerifiedRagNormCitation[] = scanResult.verified_rag_norms || [
@@ -515,6 +574,167 @@ export default function PowerLegalAnalysis({ scanResult, onCopyText }: PowerLega
 
       </div>
 
+      {/* ICS KALENDER NOTFRIST-BUTTON */}
+      <div className="p-4 rounded-xl bg-zinc-900/90 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-400 text-black">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <h5 className="text-sm font-bold text-white font-display">Notfrist-Termin direkt in Ihren Kalender eintragen</h5>
+            <p className="text-xs text-zinc-400">Automatische Erinnerungen: 3 Tage vorher und 24 Stunden vor Notfrist-Ablauf.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => downloadDeadlineICSFile(
+            scanResult.full_schriftsatz?.meta.file_number || "12 C 456/26",
+            scanResult.full_schriftsatz?.meta.legal_domain || "Rechtsmittel-Notfrist",
+            scanResult.deadline_calc?.calculatedDeadline
+          )}
+          className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-black font-mono font-extrabold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-gold-glow shrink-0"
+        >
+          <Calendar className="w-4 h-4" />
+          <span>📅 Kalender-Eintrag (.ICS) herunterladen</span>
+        </button>
+      </div>
+
+      {/* 1.1 EXPLIZITER TATBESTANDS-CHECK (JSON CHECKLISTE) */}
+      <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4">
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400">
+              <Gavel className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-blue-400 uppercase tracking-widest font-bold">Forensische Prüfung</span>
+              <h4 className="font-display font-bold text-base text-white">⚖️ Expliziter Tatbestands- & Beweislast-Check</h4>
+            </div>
+          </div>
+          <span className="text-xs font-mono px-2.5 py-1 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30">
+            {subsumption.normCode}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {subsumption.elements.map((elem, idx) => (
+            <div key={`subsump-${idx}`} className="p-3.5 rounded-xl bg-black border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-extrabold ${
+                    elem.isFulfilled ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"
+                  }`}>
+                    {elem.isFulfilled ? "TATBESTAND ERFÜLLT ✓" : "TATBESTAND VERFEHLT ✗"}
+                  </span>
+                  <span className="text-xs font-bold text-white font-sans">{elem.featureName}</span>
+                </div>
+                <p className="text-xs text-zinc-300 font-sans leading-relaxed">{elem.subsumption}</p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono bg-zinc-900 border border-zinc-800 p-2 rounded-lg">
+                <div className="text-zinc-400">Beweislast: <strong className="text-amber-400">{elem.burdenOfProof}</strong></div>
+                <span className="text-zinc-600">|</span>
+                <div className="text-zinc-400">Status: <strong className="text-zinc-200">{elem.evidenceStatus}</strong></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 1.2 RVG- & GERICHTSKOSTEN-RECHNER (GKG) MIT AMPEL */}
+      <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Wirtschaftlichkeitsprüfung</span>
+              <h4 className="font-display font-bold text-base text-white">💰 RVG- & Gerichtskostenrechner (GKG)</h4>
+            </div>
+          </div>
+
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-xl text-xs font-mono font-bold border ${
+            costCalc.trafficLight === 'GREEN' 
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+              : costCalc.trafficLight === 'YELLOW' 
+              ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' 
+              : 'bg-red-500/10 text-red-400 border-red-500/30'
+          }`}>
+            <span className="w-2.5 h-2.5 rounded-full bg-current animate-pulse"></span>
+            <span>AMPEL: {costCalc.trafficLight === 'GREEN' ? 'GRÜN (GÜNSTIG)' : costCalc.trafficLight === 'YELLOW' ? 'GELB (VERGLEICH)' : 'ROT (HOHE KOSTEN)'}</span>
+          </div>
+        </div>
+
+        {/* Streitwert-Schieberegler */}
+        <div className="p-4 rounded-xl bg-black border border-zinc-800 space-y-3">
+          <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+            <span>Streitwert anpassen: <strong>{customStreitwert.toLocaleString("de-DE")} €</strong></span>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasInsurance}
+                onChange={(e) => setHasInsurance(e.target.checked)}
+                className="rounded border-zinc-700 bg-zinc-900 text-amber-400 focus:ring-amber-400"
+              />
+              <span>Rechtsschutz vorhanden (SB 150 €)</span>
+            </label>
+          </div>
+          <input
+            type="range"
+            min="500"
+            max="30000"
+            step="500"
+            value={customStreitwert}
+            onChange={(e) => setCustomStreitwert(Number(e.target.value))}
+            className="w-full accent-amber-400 cursor-pointer"
+          />
+        </div>
+
+        {/* Kosten-Matrix */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
+          <div className="p-3 rounded-xl bg-black border border-zinc-800">
+            <div className="text-[10px] text-zinc-400 uppercase">Eigener Anwalt (RVG)</div>
+            <div className="text-sm font-bold text-white mt-0.5">{costCalc.lawyerFeesRVG.toLocaleString("de-DE")} €</div>
+          </div>
+          <div className="p-3 rounded-xl bg-black border border-zinc-800">
+            <div className="text-[10px] text-zinc-400 uppercase">Gerichtskosten (GKG)</div>
+            <div className="text-sm font-bold text-white mt-0.5">{costCalc.courtFeesGKG.toLocaleString("de-DE")} €</div>
+          </div>
+          <div className="p-3 rounded-xl bg-black border border-zinc-800">
+            <div className="text-[10px] text-zinc-400 uppercase">Worst-Case Verlust</div>
+            <div className="text-sm font-bold text-red-400 mt-0.5">{costCalc.maxCostExposure.toLocaleString("de-DE")} €</div>
+          </div>
+          <div className="p-3 rounded-xl bg-black border border-emerald-500/30 bg-emerald-950/20">
+            <div className="text-[10px] text-emerald-400 uppercase">Ihr Eigenrisiko</div>
+            <div className="text-sm font-bold text-emerald-300 mt-0.5">{costCalc.totalOwnRisk.toLocaleString("de-DE")} €</div>
+          </div>
+        </div>
+
+        <p className="text-xs text-zinc-300 font-sans border-t border-zinc-900 pt-2">{costCalc.verdict}</p>
+      </div>
+
+      {/* 1.3 TIMING-FALLE & STRATEGISCHER REAKTIONSZEITPUNKT */}
+      <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+        <div className="flex items-center gap-2.5 border-b border-zinc-800 pb-3">
+          <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] font-mono text-purple-400 uppercase tracking-widest font-bold">Prozesstaktik</span>
+            <h4 className="font-display font-bold text-base text-white">⏳ Timing-Falle & Strategischer Einreichungszeitpunkt</h4>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-black border border-zinc-800/90 space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono">
+            <span className="text-purple-400 font-bold">Empfohlener Zeitpunkt:</span>
+            <span className="text-white bg-purple-950/60 px-2.5 py-1 rounded border border-purple-500/30">{tacticalTiming.optimalFilingDate}</span>
+          </div>
+          <p className="text-xs text-zinc-300 font-sans leading-relaxed">{tacticalTiming.timingStrategy}</p>
+        </div>
+      </div>
+
       {/* 5. FORMGERECHTES MUSTERSCHREIBEN / CHECKLISTE */}
       {scanResult.mustertext_template && (
         <div className="p-6 rounded-2xl bg-zinc-950 border border-amber-500/30 space-y-4">
@@ -530,6 +750,23 @@ export default function PowerLegalAnalysis({ scanResult, onCopyText }: PowerLega
             </div>
 
             <div className="flex items-center gap-2">
+              {/* beA XJustiz Export Button */}
+              <button
+                type="button"
+                onClick={() => downloadBeAXmlFile(
+                  scanResult.full_schriftsatz?.meta.file_number || "12 C 456/26",
+                  scanResult.full_schriftsatz?.meta.court_target || "Zuständiges Gericht",
+                  "Antragsteller / Mandant",
+                  "Antragsgegner",
+                  "Fristwahrender Schriftsatz"
+                )}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                title="beA XJustiz XML-Metadaten herunterladen"
+              >
+                <SendHorizontal className="w-3.5 h-3.5" />
+                <span>beA XML Export</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleCopy(scanResult.mustertext_template!, 'mustertext')}
@@ -546,6 +783,75 @@ export default function PowerLegalAnalysis({ scanResult, onCopyText }: PowerLega
           </pre>
         </div>
       )}
+
+      {/* 6. VERJÄHRUNGS-JÄGER & BEWEIS-RANKING SUITE (FEATURES 26, 27, 49) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Verjährungs-Jäger */}
+        <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+          <div className="flex items-center gap-2.5 border-b border-zinc-800 pb-3">
+            <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-red-400 uppercase tracking-widest font-bold">Ausschlussprüfung</span>
+              <h4 className="font-display font-bold text-sm text-white">⏳ Verjährungs-Jäger (§§ 195, 199 BGB)</h4>
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-black border border-zinc-800 space-y-2 text-xs font-mono">
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Regelverjährung (3 Jahre):</span>
+              <span className="text-amber-400 font-bold">31.12.{new Date().getFullYear() + 1} (24:00 Uhr)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Höchstfrist (§ 199 Abs. 3):</span>
+              <span className="text-zinc-300">10 Jahre ab Entstehung</span>
+            </div>
+            <div className="text-[11px] text-zinc-400 font-sans border-t border-zinc-900 pt-2">
+              Prüfung: Keine Verjährungseinrede der Gegenseite greifbar, solange vor dem 31.12. ein Mahnbescheid oder Güteantrag zugestellt wird (§ 204 BGB).
+            </div>
+          </div>
+        </div>
+
+        {/* Beweis-Ranking (Schulnoten 1-6) */}
+        <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+          <div className="flex items-center gap-2.5 border-b border-zinc-800 pb-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold">Beweiskraft</span>
+              <h4 className="font-display font-bold text-sm text-white">📊 Beweismittel-Ranking (1–6)</h4>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-xs font-mono">
+            <div className="p-2.5 rounded-lg bg-black border border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded bg-emerald-400 text-black font-extrabold flex items-center justify-center text-[10px]">1.0</span>
+                <span className="text-zinc-200">Urkundenbeweis (Vertrag / Postzustellungsurkunde)</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-sans">Voller Beweis § 416 ZPO</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-black border border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded bg-yellow-400 text-black font-extrabold flex items-center justify-center text-[10px]">2.5</span>
+                <span className="text-zinc-200">Zeugenaussage / Dritte Personen</span>
+              </div>
+              <span className="text-[10px] text-yellow-400 font-sans">Freie Beweiswürdigung</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-black border border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded bg-red-400 text-black font-extrabold flex items-center justify-center text-[10px]">5.0</span>
+                <span className="text-zinc-200">Einfache Parteibehauptung ohne Beleg</span>
+              </div>
+              <span className="text-[10px] text-red-400 font-sans">Beweisfällig</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
     </div>
   );

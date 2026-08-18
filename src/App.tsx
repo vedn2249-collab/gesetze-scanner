@@ -49,6 +49,17 @@ import TrafficScannerStatus from "./components/TrafficScannerStatus";
 import TrafficGeminiBot from "./components/TrafficGeminiBot";
 import TrafficAlertsLog from "./components/TrafficAlertsLog";
 import PowerLegalAnalysis from "./components/PowerLegalAnalysis";
+import { 
+  MockTrialView, 
+  FinanceCalculatorView, 
+  DeadlinesCalendarView, 
+  FileNavigatorView, 
+  TrendRadarView, 
+  AudioToolView, 
+  KiCoachView, 
+  SelfRepresentativeGuideView, 
+  LawyerSearchView 
+} from "./components/SpecializedLegalTabs";
 import { Car } from "lucide-react";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -1661,43 +1672,177 @@ export default function App() {
         </div>
       </div>
 
-      {/* Premium Metallic Header */}
-      <header id="app_header" className="border-b border-zinc-800 bg-gradient-to-b from-zinc-950 to-black py-8 px-4 text-center">
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900/50 mb-3 text-xs tracking-widest text-zinc-400 font-mono">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            GESETZES-SCANNER • TECHNISCHE DOKUMENTEN- & TEXTANALYSE
-          </div>
+      {/* Premium Metallic Header with Left & Right Tab Wings */}
+      <header id="app_header" className="border-b border-zinc-800 bg-gradient-to-b from-zinc-950 to-black py-6 px-3 text-center">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
           
-          {/* Metallic & Gold Title pairing */}
-          <h1 id="app_title" className="text-4xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-100 bg-clip-text text-transparent drop-shadow-md leading-none">
-            GESETZES-SCANNER
-          </h1>
-          <h2 className="mt-3 text-lg sm:text-xl md:text-2xl font-display font-bold tracking-tight text-amber-400">
-            Das technische Tool zur Dokumenten- und Textanalyse
-          </h2>
-          <p className="mt-3 text-xs sm:text-sm md:text-base text-zinc-300 max-w-2xl mx-auto leading-relaxed">
-            Automatisierte Software-Lösung zur effizienten Textstrukturierung, Fristenberechnung und Formatierung von Dokumenten. Optimieren Sie Ihre Workflows durch rein technische Datenanalyse.
-          </p>
-        </div>
-      </header>
+          {/* LINKER FLÜGEL: TABS 1 BIS 5 UNTEREINANDER */}
+          <div className="w-full lg:w-72 flex flex-col gap-1.5 shrink-0 text-left">
+            <span className="text-[10px] font-mono font-extrabold text-amber-400 uppercase tracking-wider px-1">
+              ⚡ Fach-Module (Flügel Links)
+            </span>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5 p-1.5 rounded-xl bg-zinc-950/90 border border-zinc-800/90 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setActiveTab("verfahrens_schutz")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "verfahrens_schutz"
+                    ? "bg-amber-400 text-black shadow-gold-glow"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span className="truncate">1. Gesetzes-Scanner</span>
+              </button>
 
-      {/* Prominent Legal Disclaimer Banner (Gut sichtbar platziert für Paddle-Prüfung & Nutzer-Klarheit) */}
-      <div className="max-w-4xl mx-auto px-4 mt-6">
-        <div className="p-4 sm:p-5 rounded-2xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-zinc-950 to-amber-950/30 shadow-gold-glow text-left">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            <div className="space-y-1.5">
-              <h4 className="font-mono font-extrabold text-amber-400 uppercase text-xs tracking-wide">
-                Wichtiger rechtlicher Hinweis:
-              </h4>
-              <p className="text-zinc-300 text-xs leading-relaxed font-sans">
-                Der Gesetze-Scanner ist eine rein technische Software-Anwendung zur automatisierten Text- und Dokumentenanalyse. Die Anwendung bietet zu keinem Zeitpunkt eine Rechtsberatung, juristische Prüfungen oder behördliche Dienstleistungen an und trifft keinerlei rechtsverbindliche Entscheidungen über natürliche Personen. Alle generierten Ergebnisse dienen ausschließlich der technischen Textverarbeitung und Vorbereitung. Die Verantwortung für die inhaltliche und rechtliche Prüfung von Dokumenten verbleibt voll und ganz beim Anwender.
-              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab("mock_trial")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "mock_trial"
+                    ? "bg-purple-600 text-white shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span className="truncate">2. Mock-Trial & Simulator</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("kosten_finanzen")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "kosten_finanzen"
+                    ? "bg-emerald-500 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <DollarSign className="w-3.5 h-3.5" />
+                <span className="truncate">3. Kosten & Finanzen (RVG)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("fristen_kalender")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "fristen_kalender"
+                    ? "bg-amber-400 text-black shadow-gold-glow"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="truncate">4. Fristen-Tracker & ICS</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("akten_navigator")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "akten_navigator"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="truncate">5. Akten-Navigator</span>
+              </button>
             </div>
           </div>
+
+          {/* ZENTRUM: GESETZES-SCANNER TITEL & BRANDING */}
+          <div className="flex-grow max-w-xl text-center px-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900/50 mb-3 text-[10px] tracking-widest text-zinc-400 font-mono">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              GESETZES-SCANNER • TECHNISCHE DOKUMENTEN- & TEXTANALYSE
+            </div>
+            
+            {/* Metallic & Gold Title pairing */}
+            <h1 id="app_title" className="text-3xl sm:text-4xl md:text-5xl font-display font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-400 to-zinc-100 bg-clip-text text-transparent drop-shadow-md leading-tight">
+              GESETZES-SCANNER
+            </h1>
+            <h2 className="mt-2 text-base sm:text-lg font-display font-bold tracking-tight text-amber-400">
+              Das technische Tool zur Dokumenten- und Textanalyse
+            </h2>
+            <p className="mt-2 text-xs text-zinc-400 leading-relaxed max-w-lg mx-auto">
+              Automatisierte Software-Lösung zur effizienten Textstrukturierung, Fristenberechnung und Formatierung von Dokumenten. Optimieren Sie Ihre Workflows durch rein technische Datenanalyse.
+            </p>
+          </div>
+
+          {/* RECHTER FLÜGEL: TABS 6 BIS 10 UNTEREINANDER */}
+          <div className="w-full lg:w-72 flex flex-col gap-1.5 shrink-0 text-left">
+            <span className="text-[10px] font-mono font-extrabold text-cyan-400 uppercase tracking-wider px-1">
+              📡 Monitoring & Praxis (Flügel Rechts)
+            </span>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5 p-1.5 rounded-xl bg-zinc-950/90 border border-zinc-800/90 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setActiveTab("rechtsprechungs_radar")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "rechtsprechungs_radar"
+                    ? "bg-cyan-500 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span className="truncate">6. Rechtsprechungs-Radar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("audio_tool")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "audio_tool"
+                    ? "bg-rose-500 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span className="truncate">7. Audio-Tool & Diktat</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("ki_coach")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "ki_coach"
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span className="truncate">8. KI-Coach (Verhandlung)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("selbstvertreter_leitfaden")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "selbstvertreter_leitfaden"
+                    ? "bg-teal-500 text-black shadow-md"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="truncate">9. Selbstvertreter-Guide</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("anwalts_suche")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "anwalts_suche"
+                    ? "bg-amber-400 text-black shadow-gold-glow"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="truncate">10. Anwalts-Finder</span>
+              </button>
+            </div>
+          </div>
+
         </div>
-      </div>
+      </header>
 
       {/* Top Unwetter-Style Emergency Law Alert Banner for Subscribers */}
       {!dismissedEmergencyBanner && lawAlerts.some((a) => a.severity === "CRITICAL") && (
@@ -1717,13 +1862,18 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => setActiveTab("gesetzes_radar")}
+                type="button"
+                onClick={() => {
+                  setActiveTab("rechtsprechungs_radar");
+                  triggerLiveLawCheck();
+                }}
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 px-3 py-1 rounded-lg font-mono text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Radio className="w-3.5 h-3.5 animate-pulse text-red-400" />
                 Auswirkung im Radar prüfen →
               </button>
               <button
+                type="button"
                 onClick={() => setDismissedEmergencyBanner(true)}
                 className="text-zinc-500 hover:text-zinc-300 p-1 cursor-pointer"
                 title="Banner schließen"
@@ -2695,6 +2845,141 @@ export default function App() {
                 </div>
               )}
 
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 2. MOCK-TRIAL & PROZESS-SIMULATOR */}
+        <AnimatePresence mode="wait">
+          {activeTab === "mock_trial" && (
+            <motion.div
+              key="mock_trial_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <MockTrialView caseSummary={situationText} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 3. KOSTEN & FINANZEN (RVG/GKG/PKH) */}
+        <AnimatePresence mode="wait">
+          {activeTab === "kosten_finanzen" && (
+            <motion.div
+              key="kosten_finanzen_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <FinanceCalculatorView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 4. FRISTEN-TRACKER & KALENDER */}
+        <AnimatePresence mode="wait">
+          {activeTab === "fristen_kalender" && (
+            <motion.div
+              key="fristen_kalender_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DeadlinesCalendarView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 5. AKTEN-NAVIGATOR */}
+        <AnimatePresence mode="wait">
+          {activeTab === "akten_navigator" && (
+            <motion.div
+              key="akten_navigator_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <FileNavigatorView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 6. RECHTSPRECHUNGS-TREND-RADAR */}
+        <AnimatePresence mode="wait">
+          {activeTab === "rechtsprechungs_radar" && (
+            <motion.div
+              key="rechtsprechungs_radar_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <TrendRadarView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 7. AUDIO-TOOL */}
+        <AnimatePresence mode="wait">
+          {activeTab === "audio_tool" && (
+            <motion.div
+              key="audio_tool_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AudioToolView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 8. KI-COACH */}
+        <AnimatePresence mode="wait">
+          {activeTab === "ki_coach" && (
+            <motion.div
+              key="ki_coach_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <KiCoachView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 9. SELBSTVERTRETER-LEITFADEN */}
+        <AnimatePresence mode="wait">
+          {activeTab === "selbstvertreter_leitfaden" && (
+            <motion.div
+              key="selbstvertreter_leitfaden_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SelfRepresentativeGuideView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 10. ANWALTS-SUCHMASCHINE */}
+        <AnimatePresence mode="wait">
+          {activeTab === "anwalts_suche" && (
+            <motion.div
+              key="anwalts_suche_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LawyerSearchView />
             </motion.div>
           )}
         </AnimatePresence>
