@@ -2293,11 +2293,11 @@ export default function App() {
                   <div className="space-y-2">
                     <h4 className="font-display font-bold text-white tracking-tight">Kryptografische Analyse läuft...</h4>
                     <p className="text-xs text-amber-400 font-mono tracking-widest uppercase">
-                      {loadingStep === 0 && "Schritt 1: Initialisiere Gesetzes-Scanner..."}
-                      {loadingStep === 1 && "Schritt 2: Extrahiere Tatbestandsmerkmale..."}
-                      {loadingStep === 2 && "Schritt 3: Konsultiere Gesetzbücher & Datenbank..."}
-                      {loadingStep === 3 && "Schritt 4: Evaluiere Formfehler & Verjährungen..."}
-                      {loadingStep === 4 && "Schritt 5: Berechne Verteidigungsszenario..."}
+                      {loadingStep === 0 && "Schritt 1: Rechtsgebiet & Kernfragen klassifizieren..."}
+                      {loadingStep === 1 && "Schritt 2: Gezielte Vektorsuche im aktuellen Gesetzbuch (RAG)..."}
+                      {loadingStep === 2 && "Schritt 3: Logischer Abgleich: Passen Tatbestandsmerkmale zum Sachverhalt?"}
+                      {loadingStep === 3 && "Schritt 4: Evaluiere BGH-Präzedenzfälle & Formfehler..."}
+                      {loadingStep === 4 && "Schritt 5: Ausgabe mit direktem Zitat & verifizierten Gesetzes-Links..."}
                     </p>
                   </div>
                   <div className="w-full max-w-xs mx-auto bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">

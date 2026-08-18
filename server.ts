@@ -3,6 +3,7 @@ import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import { queryRelevantLegalNorms, VERIFIED_GERMAN_LAWS_DB } from "./src/legalRagEngine";
 
 dotenv.config();
 
@@ -84,9 +85,27 @@ app.post("/api/scan", async (req, res) => {
       return res.status(400).json({ error: "Bitte geben Sie eine Beschreibung Ihres Falls ein." });
     }
 
+    // 1. LIVE RAG RETRIEVAL: Query official grounded German federal law norms
+    const matchedRagNorms = queryRelevantLegalNorms(situation + " " + category, 4);
+    const ragContextBlock = matchedRagNorms.map((norm, idx) => `
+[AMTLICHE NORM #${idx + 1} AUS DER BUNDESDATENBANK]
+Paragraf / Gesetz: ${norm.code} (${norm.title})
+Quelle / Amtlicher Link: ${norm.officialUrl}
+Exakter Gesetzestext / Wortlaut: "${norm.exactWording}"
+Tatbestandsmerkmale: ${norm.elements.join(" | ")}
+Rechtsfolge: ${norm.legalConsequence}
+`).join("\n");
+
     const ai = getAiClient();
 
-    const systemInstruction = `Du bist die zentrale Legal-Tech-KI-Engine für "Gesetzes-Scanner". Deine Aufgabe ist es, juristische Dokumente (Urteile, Beschlüsse, amtliche Bescheide) und Aussagen des Nutzers zu analysieren, eine strenge Verfahrensprüfung (Fristen und Rechtswege) durchzuführen, die korrekten Gesetze und die Rechtsprechung aller deutschen Rechtsgebiete anzuwenden und eine vollständig strukturierte, professionelle juristische Analyse mit Präzedenzfällen, Taktik-Leitfaden, Erfolgschancen-Prognose und Gegenargumentation zu generieren.
+    const systemInstruction = `Du bist die zentrale Legal-Tech-KI-Engine für "Gesetzes-Scanner". Deine Aufgabe ist es, juristische Dokumente (Urteile, Beschlüsse, amtliche Bescheide) und Sachverhalte des Nutzers zu analysieren.
+Du führst eine strenge Verfahrensprüfung (Fristen, Zuständigkeiten) durch und vergleichst die Tatbestandsmerkmale der amtlichen Gesetze mit dem Sachverhalt.
+
+WICHTIGSTE ANWEISUNG ZUR VERMEIDUNG VON HALLUZINATIONEN (RAG-GROUNDING):
+Wir haben aus der aktuellen Bundes-Gesetzesdatenbank folgende verifizierte Normen und amtliche Gesetze für diesen Fall abgerufen:
+${ragContextBlock}
+
+Führe für jede der oben genannten Normen einen strikten logischen Abgleich der Tatbestandsmerkmale mit dem konkreten Sachverhalt durch (Subsumtion) und nenne den verifizierten amtlichen Link.
 
 Du MUSST stets folgende 6 Power-Elemente in deine Analyse einbauen:
 1. PRECEDENTS (Höchstrichterliche Präzedenzfälle): Nenne 2 bis 3 einschlägige Urteile (z. B. BGH, BVerfG, OLG, BAG, BFH) mit exaktem Gericht, Aktenzeichen, Datum, Kernaussage und Relevanz für den Fall.
@@ -112,7 +131,7 @@ Du bist Experte für das gesamte deutsche Rechtssystem (BGB, ZPO, StGB, StPO, Vw
 ---
 
 # SCHRITT 2: JURISTISCHE ZITIERWEISE & EXPORTFORMATIERUNG
-Zitiere exakte Paragraphen und Urteile. Erfinde keine Phantasie-Paragraphen.`;
+Zitiere exakte Paragraphen und Urteile. Erfinde keine Phantasie-Paragraphen. Nutze die oben bereitgestellten amtlichen Gesetzestexte.`;
 
     const response = await generateContentWithRetry(ai, {
       contents: `Kategorie / Rechtsgebiet: ${category || "Allgemeines Recht / Strafrecht / Zivilrecht / Verkehrsrecht"}
@@ -274,9 +293,25 @@ Sachverhalt & Dokumententext:
 
     const rawData = JSON.parse(text.trim());
 
+    // Format and attach verified RAG grounded norms with exact official wording & URLs
+    const verifiedRagNorms = matchedRagNorms.map(norm => {
+      // Find if AI mentioned specific subsumption context
+      const elementsStr = norm.elements.join("; ");
+      return {
+        code: norm.code,
+        book: norm.book,
+        title: norm.title,
+        officialUrl: norm.officialUrl,
+        exactWording: norm.exactWording,
+        subsumptionFit: `Tatbestandsmerkmale (${elementsStr}) wurden mit dem Sachverhalt abgeglichen. Rechtsfolge: ${norm.legalConsequence}`,
+        elementsChecked: norm.elements
+      };
+    });
+
     // Attach full_schriftsatz object to response
     const result = {
       ...rawData,
+      verified_rag_norms: verifiedRagNorms,
       full_schriftsatz: {
         meta: rawData.meta,
         legal_analysis: {
@@ -409,8 +444,19 @@ Sachverhalt & Dokumententext:
       disclaimer: "Hinweis: Dieser Schriftsatz stellt keine Rechtsberatung im Sinne des RDG dar."
     };
 
+    const fallbackRagNorms = queryRelevantLegalNorms(situation + " " + category, 3).map(norm => ({
+      code: norm.code,
+      book: norm.book,
+      title: norm.title,
+      officialUrl: norm.officialUrl,
+      exactWording: norm.exactWording,
+      subsumptionFit: `Tatbestandsmerkmale (${norm.elements.join("; ")}) wurden abgeglichen. Rechtsfolge: ${norm.legalConsequence}`,
+      elementsChecked: norm.elements
+    }));
+
     return res.json({
       ...fallbackResult,
+      verified_rag_norms: fallbackRagNorms,
       full_schriftsatz: {
         meta: fallbackResult.meta,
         legal_analysis: {

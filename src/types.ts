@@ -143,6 +143,16 @@ export interface FullSchriftsatzResult {
   };
 }
 
+export interface VerifiedRagNormCitation {
+  code: string;
+  book: string;
+  title: string;
+  officialUrl: string;
+  exactWording: string;
+  subsumptionFit: string; // Logischer Abgleich: Passen Tatbestandsmerkmale?
+  elementsChecked: string[];
+}
+
 export interface ScanResult {
   sofortmassnahme: string;
   premium_teaser: string;
@@ -150,6 +160,7 @@ export interface ScanResult {
   taktik: string;
   schritte_mustertext: string;
   disclaimer: string;
+  verified_rag_norms?: VerifiedRagNormCitation[]; // Official RAG Grounded Law Citations with Direct Links
   precedents?: PrecedentCase[];
   tactical_steps?: TacticalStep[];
   opposing_arguments?: OpposingArgument[];
