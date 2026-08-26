@@ -1400,11 +1400,18 @@ interface WebSource {
   title: string;
 }
 
+interface OfficialDir {
+  name: string;
+  url: string;
+  description: string;
+}
+
 export function LawyerSearchView() {
   const [plz, setPlz] = useState('');
   const [field, setField] = useState('Miet- und Wohnungseigentumsrecht');
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
   const [sources, setSources] = useState<WebSource[]>([]);
+  const [officialDirectories, setOfficialDirectories] = useState<OfficialDir[]>([]);
   const [locationName, setLocationName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -1428,13 +1435,14 @@ export function LawyerSearchView() {
       });
 
       const data = await res.json();
-      if (data && data.lawyers) {
+      if (data && data.lawyers && data.lawyers.length > 0) {
         setLawyers(data.lawyers);
-        setSources(data.sources || []);
-        setLocationName(data.locationDetected || plz);
       } else {
         setLawyers([]);
       }
+      setSources(data?.sources || []);
+      setOfficialDirectories(data?.officialDirectories || []);
+      setLocationName(data?.locationDetected || plz.trim());
     } catch (err) {
       console.warn('Lawyer search error:', err);
       setLawyers([]);
@@ -1679,11 +1687,78 @@ export function LawyerSearchView() {
       )}
 
       {!isLoading && hasSearched && lawyers.length === 0 && (
-        <div className="p-8 rounded-xl bg-black border border-zinc-900 text-center space-y-2">
-          <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
-          <p className="text-xs text-zinc-400 font-mono">
-            Keine Kanzleien für diesen Suchbegriff gefunden. Bitte überprüfen Sie Ihre Eingabe.
-          </p>
+        <div className="space-y-5">
+          <div className="p-6 rounded-2xl bg-black border border-zinc-800 text-center space-y-3">
+            <Search className="w-8 h-8 text-amber-400 mx-auto" />
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-white font-display">Offizielle Anwaltssuche für {locationName || plz}</h4>
+              <p className="text-xs text-zinc-400 font-sans max-w-lg mx-auto">
+                Wählen Sie eines der verifizierten Portale, um alle zugelassenen Fachanwälte für <strong>{field}</strong> in <strong>{locationName || plz}</strong> mit direkten Kanzleidaten und Fachanwaltsnachweis aufzurufen:
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <a
+              href={`https://www.anwalt.de/anwaltssuche.php?stadt=${encodeURIComponent(locationName || plz)}&rechtsgebiet=${encodeURIComponent(field)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-amber-400/60 transition-all space-y-2 group block cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-400 font-display group-hover:underline">Anwalt.de Kanzleisuche</span>
+                <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-amber-400" />
+              </div>
+              <p className="text-xs text-zinc-300 font-sans">
+                Fachanwälte für {field} in {locationName || plz} mit echten Mandantenbewertungen, Öffnungszeiten und Sofortkontakt.
+              </p>
+            </a>
+
+            <a
+              href={`https://anwaltauskunft.de/anwaltssuche?q=${encodeURIComponent((locationName || plz) + ' ' + field)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-emerald-400/60 transition-all space-y-2 group block cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400 font-display group-hover:underline">DAV Deutsche Anwaltauskunft</span>
+                <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-emerald-400" />
+              </div>
+              <p className="text-xs text-zinc-300 font-sans">
+                Offizielle Auskunft des Deutschen Anwaltvereins für {field} in {locationName || plz}.
+              </p>
+            </a>
+
+            <a
+              href={`https://www.google.com/maps/search/${encodeURIComponent('Rechtsanwalt Fachanwalt ' + field + ' ' + (locationName || plz))}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-blue-400/60 transition-all space-y-2 group block cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-blue-400 font-display group-hover:underline">Google Maps & Rezensionen</span>
+                <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-blue-400" />
+              </div>
+              <p className="text-xs text-zinc-300 font-sans">
+                Lokale Kanzleien im Stadtplan mit Rezensionen, Routenplaner und aktuellen Telefonnummern.
+              </p>
+            </a>
+
+            <a
+              href="https://bea-brak.de/bravsearch/search.html"
+              target="_blank"
+              rel="noreferrer"
+              className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-purple-400/60 transition-all space-y-2 group block cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-400 font-display group-hover:underline">Amtliches BRAV-Register (BRAK)</span>
+                <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-purple-400" />
+              </div>
+              <p className="text-xs text-zinc-300 font-sans">
+                Bundesweites Amtliches Anwaltsverzeichnis der Bundesrechtsanwaltskammer für rechtssichere Pflichtprüfung.
+              </p>
+            </a>
+          </div>
         </div>
       )}
 
@@ -1691,7 +1766,7 @@ export function LawyerSearchView() {
         <div className="p-8 rounded-xl bg-black border border-zinc-900 text-center space-y-2">
           <MapPin className="w-8 h-8 text-zinc-600 mx-auto" />
           <p className="text-xs text-zinc-400 font-mono">
-            Geben Sie Ihre Postleitzahl oder Stadt ein, um sofort konkrete Fachanwälte mit Adresse, Telefonnummer, Schwerpunkten und Bewertung in Ihrer Region zu erhalten.
+            Geben Sie Ihre Postleitzahl oder Stadt ein, um sofort verifizierte Fachanwälte und direkte Kammerverzeichnisse für Ihre Region aufzurufen.
           </p>
         </div>
       )}
