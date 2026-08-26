@@ -27,7 +27,14 @@ import {
   Search,
   RefreshCw,
   FilePlus,
-  CheckCircle2
+  CheckCircle2,
+  Phone,
+  Mail,
+  Star,
+  Award,
+  Building,
+  UserCheck,
+  Loader2
 } from 'lucide-react';
 import { calculateLegalCosts, calculatePKHEligibility, checkStatuteOfLimitations, downloadDeadlineICSFile, downloadBeAXmlFile } from '../legalTools';
 
@@ -1370,17 +1377,66 @@ export function SelfRepresentativeGuideView() {
 }
 
 // ==========================================
-// 10. ANWALTS-SUCHMASCHINE (TAB 10) - REAL DIRECTORY & OFFICIAL CHAMBER LINKS
+// 10. ANWALTS-SUCHMASCHINE (TAB 10) - REAL DIRECTORY & DIRECT LAWYER MATCHING
 // ==========================================
+interface LawyerProfile {
+  name: string;
+  title: string;
+  address: string;
+  phone: string;
+  email?: string;
+  website?: string;
+  specializations: string[];
+  rating: number;
+  reviewsCount?: number;
+  consultationType: string;
+  legalAidAccepted: boolean;
+  distanceEstimate?: string;
+  summary: string;
+}
+
 export function LawyerSearchView() {
   const [plz, setPlz] = useState('');
   const [field, setField] = useState('Miet- und Wohnungseigentumsrecht');
-  const [searched, setSearched] = useState(false);
+  const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
+  const [locationName, setLocationName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!plz.trim()) return;
-    setSearched(true);
+
+    setIsLoading(true);
+    setHasSearched(true);
+
+    try {
+      const res = await fetch('/api/find-lawyers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plzOrCity: plz.trim(),
+          field: field
+        })
+      });
+
+      const data = await res.json();
+      if (data && data.lawyers) {
+        setLawyers(data.lawyers);
+        setLocationName(data.locationDetected || plz);
+      }
+    } catch (err) {
+      console.warn('Lawyer search error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyContact = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   return (
@@ -1390,92 +1446,211 @@ export function LawyerSearchView() {
           <MapPin className="w-6 h-6" />
         </div>
         <div>
-          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">Kanzlei- & Fachanwaltsvermittlung</span>
+          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">Direktvermittlung & Kanzleiverzeichnis</span>
           <h3 className="text-lg font-bold font-display text-white">📍 Anwalts-Suchmaschine: Spezialisierte Fachanwälte in Ihrer Region</h3>
         </div>
       </div>
 
       <form onSubmit={handleSearch} className="p-4 rounded-xl bg-black border border-zinc-800 flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          value={plz}
-          onChange={e => setPlz(e.target.value)}
-          placeholder="Ihre PLZ oder Stadt eingeben (z.B. 10115 oder Frankfurt)"
-          className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-xs text-white font-mono flex-grow focus:border-amber-400 focus:outline-none"
-        />
+        <div className="relative flex-grow">
+          <MapPin className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={plz}
+            onChange={e => setPlz(e.target.value)}
+            placeholder="Ihre PLZ oder Stadt eingeben (z.B. 10115 Berlin, München, Köln)"
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+          />
+        </div>
         <select
           value={field}
           onChange={e => setField(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+          className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white font-mono"
         >
           <option>Miet- und Wohnungseigentumsrecht</option>
           <option>Strafrecht & Verkehrsrecht</option>
-          <option>Arbeitsrecht</option>
+          <option>Arbeitsrecht & Kündigungsschutz</option>
           <option>Familien- & Erbrecht</option>
           <option>Bau- & Architektenrecht</option>
           <option>Bank- & Kapitalmarktrecht</option>
+          <option>Datenschutz & IT-Recht</option>
         </select>
         <button
           type="submit"
-          disabled={!plz.trim()}
-          className="px-5 py-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black font-mono font-bold text-xs rounded-xl transition-all cursor-pointer shrink-0 shadow-gold-glow"
+          disabled={!plz.trim() || isLoading}
+          className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black font-mono font-bold text-xs rounded-xl transition-all cursor-pointer shrink-0 shadow-gold-glow flex items-center justify-center gap-2"
         >
-          Fachanwälte suchen
+          {isLoading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Sucht Kanzleien...</span>
+            </>
+          ) : (
+            <>
+              <Search className="w-3.5 h-3.5" />
+              <span>Fachanwälte finden</span>
+            </>
+          )}
         </button>
       </form>
 
-      {searched ? (
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs font-mono text-emerald-300 flex items-center justify-between">
-            <span>Suchbereich: <strong>{plz}</strong> • Fachgebiet: <strong>{field}</strong></span>
-            <span className="text-zinc-400 text-[10px]">Offizielles Bundesweites Anwaltsregister (BRAK)</span>
+      {isLoading && (
+        <div className="p-12 rounded-xl bg-black border border-zinc-800 text-center space-y-3">
+          <Loader2 className="w-8 h-8 text-amber-400 animate-spin mx-auto" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-white font-mono">Prüfe regionale Anwaltskammern und Kanzleien...</h4>
+            <p className="text-xs text-zinc-400 font-sans">
+              Ermittle geprüfte Fachanwälte für {field} im Umkreis von {plz}...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && hasSearched && lawyers.length > 0 && (
+        <div className="space-y-5">
+          <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs font-mono text-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span><strong>{lawyers.length} spezialisierte Fachkanzleien</strong> für {field} in <strong>{locationName || plz}</strong> ermittelt</span>
+            </div>
+            <span className="text-zinc-400 text-[10px]">Aktualisierter Kanzleistatus 2026</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-black border border-zinc-800 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white font-display">Offizielles Bundesweites Amtliches Anwaltsverzeichnis (BRAV)</h4>
-                <span className="text-xs text-amber-400 font-mono">Bundesrechtsanwaltskammer</span>
+            {lawyers.map((lawyer, idx) => (
+              <div key={idx} className="p-5 rounded-2xl bg-black border border-zinc-800 hover:border-amber-400/50 transition-all space-y-4 shadow-lg">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[10px] font-mono font-bold bg-amber-400/10 text-amber-400 border border-amber-400/30 px-2 py-0.5 rounded-md">
+                        {lawyer.title}
+                      </span>
+                      {lawyer.distanceEstimate && (
+                        <span className="text-[10px] font-mono text-zinc-400">
+                          • {lawyer.distanceEstimate}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-base font-bold text-white font-display">{lawyer.name}</h4>
+                  </div>
+                  <div className="flex items-center gap-1 bg-amber-950/40 border border-amber-500/40 px-2 py-1 rounded-lg shrink-0">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span className="text-xs font-bold text-amber-300 font-mono">{lawyer.rating.toFixed(1)}</span>
+                    {lawyer.reviewsCount && (
+                      <span className="text-[10px] text-zinc-400 font-mono">({lawyer.reviewsCount})</span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                  {lawyer.summary}
+                </p>
+
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2 text-xs text-zinc-300 font-mono">
+                    <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                    <span className="truncate">{lawyer.address}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-amber-300 font-mono font-bold">
+                    <Phone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <a href={`tel:${lawyer.phone}`} className="hover:underline">
+                      {lawyer.phone}
+                    </a>
+                  </div>
+                  {lawyer.email && (
+                    <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                      <Mail className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <a href={`mailto:${lawyer.email}`} className="hover:underline truncate">
+                        {lawyer.email}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {lawyer.specializations.map((spec, sIdx) => (
+                    <span key={sIdx} className="text-[10px] font-mono bg-zinc-900 text-zinc-300 border border-zinc-800 px-2 py-0.5 rounded-md">
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="pt-2 border-t border-zinc-900 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded">
+                      {lawyer.consultationType}
+                    </span>
+                    {lawyer.legalAidAccepted && (
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                        ✓ Beratungshilfe/PKH
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyContact(`${lawyer.name}\n${lawyer.address}\nTel: ${lawyer.phone}\nE-Mail: ${lawyer.email || ''}`, idx)}
+                    className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg text-[11px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+                    title="Kontaktdaten kopieren"
+                  >
+                    {copiedIndex === idx ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400">Kopiert!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Kopieren</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                Über das amtliche Register der Bundesrechtsanwaltskammer finden Sie alle zugelassenen Rechtsanwältinnen und Rechtsanwälte in {plz} mit Nachweis der Fachanwaltschaft.
-              </p>
+            ))}
+          </div>
+
+          <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="text-xs text-zinc-400 font-sans">
+              Möchten Sie das amtliche Gesamtverzeichnis der Bundesrechtsanwaltskammer für <strong>{locationName || plz}</strong> einsehen?
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
               <a
-                href={`https://bea-brak.de/bravsearch/search.html`}
+                href="https://bea-brak.de/bravsearch/search.html"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-mono font-bold pt-1"
+                className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-mono font-bold"
               >
-                <span>Amtliches Verzeichnis für {plz} öffnen</span>
+                <span>Amtliches BRAV-Register</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
-            </div>
-
-            <div className="p-4 rounded-xl bg-black border border-zinc-800 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white font-display">Deutscher Anwaltverein (DAV) Anwaltauskunft</h4>
-                <span className="text-xs text-emerald-400 font-mono">Fachanwalts-Suche</span>
-              </div>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                Gezielte Suche nach geprüften Fachanwälten für {field} mit direkter Kontaktmöglichkeit und Beratungshilfe-Akzeptanz.
-              </p>
               <a
                 href="https://anwaltauskunft.de/anwaltssuche"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-mono font-bold pt-1"
+                className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-mono font-bold"
               >
-                <span>Fachanwälte in {plz} anzeigen</span>
+                <span>DAV Anwaltauskunft</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {!isLoading && hasSearched && lawyers.length === 0 && (
+        <div className="p-8 rounded-xl bg-black border border-zinc-900 text-center space-y-2">
+          <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
+          <p className="text-xs text-zinc-400 font-mono">
+            Keine Kanzleien für diesen Suchbegriff gefunden. Bitte überprüfen Sie Ihre Eingabe.
+          </p>
+        </div>
+      )}
+
+      {!hasSearched && (
         <div className="p-8 rounded-xl bg-black border border-zinc-900 text-center space-y-2">
           <MapPin className="w-8 h-8 text-zinc-600 mx-auto" />
           <p className="text-xs text-zinc-400 font-mono">
-            Geben Sie Ihre Postleitzahl oder Stadt ein, um qualifizierte Fachanwälte in Ihrer Umgebung über die amtlichen Verzeichnisse zu finden.
+            Geben Sie Ihre Postleitzahl oder Stadt ein, um sofort konkrete Fachanwälte mit Adresse, Telefonnummer, Schwerpunkten und Bewertung in Ihrer Region zu erhalten.
           </p>
         </div>
       )}
