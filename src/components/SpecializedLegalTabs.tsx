@@ -1395,10 +1395,16 @@ interface LawyerProfile {
   summary: string;
 }
 
+interface WebSource {
+  uri: string;
+  title: string;
+}
+
 export function LawyerSearchView() {
   const [plz, setPlz] = useState('');
   const [field, setField] = useState('Miet- und Wohnungseigentumsrecht');
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
+  const [sources, setSources] = useState<WebSource[]>([]);
   const [locationName, setLocationName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -1424,10 +1430,14 @@ export function LawyerSearchView() {
       const data = await res.json();
       if (data && data.lawyers) {
         setLawyers(data.lawyers);
+        setSources(data.sources || []);
         setLocationName(data.locationDetected || plz);
+      } else {
+        setLawyers([]);
       }
     } catch (err) {
       console.warn('Lawyer search error:', err);
+      setLawyers([]);
     } finally {
       setIsLoading(false);
     }
@@ -1557,6 +1567,14 @@ export function LawyerSearchView() {
                       {lawyer.phone}
                     </a>
                   </div>
+                  {lawyer.website && (
+                    <div className="flex items-center gap-2 text-xs text-zinc-300 font-mono">
+                      <ExternalLink className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <a href={lawyer.website.startsWith('http') ? lawyer.website : `https://${lawyer.website}`} target="_blank" rel="noreferrer" className="hover:underline text-amber-400 truncate">
+                        {lawyer.website.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
                   {lawyer.email && (
                     <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
                       <Mail className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
@@ -1588,7 +1606,7 @@ export function LawyerSearchView() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => copyContact(`${lawyer.name}\n${lawyer.address}\nTel: ${lawyer.phone}\nE-Mail: ${lawyer.email || ''}`, idx)}
+                    onClick={() => copyContact(`${lawyer.name}\n${lawyer.address}\nTel: ${lawyer.phone}\n${lawyer.website || ''}\nE-Mail: ${lawyer.email || ''}`, idx)}
                     className="p-1.5 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg text-[11px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
                     title="Kontaktdaten kopieren"
                   >
@@ -1608,6 +1626,29 @@ export function LawyerSearchView() {
               </div>
             ))}
           </div>
+
+          {sources.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-black border border-zinc-800 space-y-2">
+              <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-amber-400" />
+                <span>Echtzeit-Quellen & Verzeichnisse (Google Grounding):</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {sources.slice(0, 5).map((src, sIdx) => (
+                  <a
+                    key={sIdx}
+                    href={src.uri}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-amber-400 hover:underline bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-lg inline-flex items-center gap-1"
+                  >
+                    <span>{src.title || src.uri}</span>
+                    <ExternalLink className="w-3 h-3 text-zinc-500" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-xs text-zinc-400 font-sans">

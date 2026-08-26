@@ -889,7 +889,7 @@ app.post("/api/radar-search", async (req, res) => {
   }
 });
 
-// API route for specialized lawyer search by PLZ / City & Law Field with verified direct contacts
+// API route for specialized lawyer search by PLZ / City & Law Field with verified direct contacts via Google Search Grounding
 app.post("/api/find-lawyers", async (req, res) => {
   const { plzOrCity = "", field = "Miet- und Wohnungseigentumsrecht" } = req.body || {};
 
@@ -899,27 +899,33 @@ app.post("/api/find-lawyers", async (req, res) => {
 
   try {
     const ai = getAiClient();
-    const prompt = `Erstelle 3 bis 4 konkrete, hochqualifizierte Fachanwälte / Kanzleien für das Rechtsgebiet "${field}" im direkten Raum / Einzugsgebiet von "${plzOrCity}" (Deutschland).
+    
+    // Step 1: Search the web in real-time for real, existing lawyers & law firms with addresses & phone numbers
+    const searchPrompt = `Finde 3 bis 4 ECHTE, tatsächlich existierende Rechtsanwälte oder Kanzleien für das Fachgebiet "${field}" in oder um "${plzOrCity}" (Deutschland).
+Recherchiere die echten Kanzleinamen, exakten echten Adressen, echten Telefonnummern, Websites und Schwerpunkte.
+Erfinde KEINE Kanzleien oder Telefonnummern! Nenne nur real existierende Anwälte/Kanzleien mit realen Daten aus deiner Websuche.`;
 
-Gib für jede Kanzlei folgendes JSON-Format aus:
-- name: Kanzleiname oder Fachanwalt (z.B. "Kanzlei Dr. Hoffmann & Kollegen" oder "Rechtsanwalt Markus Fischer (Fachanwalt für ${field})")
-- title: Fachanwaltstitel (z.B. "Fachanwalt für ${field}")
-- address: Realistische Adresse mit Straße, Hausnummer, PLZ und Ort (passend zu "${plzOrCity}")
-- phone: Lokale Telefonnummer mit passender Vorwahl
-- email: Kanzlei-E-Mail (z.B. "kontakt@kanzlei-...")
-- website: Offizielle Kanzlei-Webadresse
-- specializations: 3-4 konkrete Schwerpunkte (z.B. ["Kündigungsschutz", "Abmahnung", "Aufhebungsvertrag", "Arbeitszeugnis"])
-- rating: Bewertungsdurchschnitt (z.B. 4.8 oder 4.9)
-- reviewsCount: Anzahl der Mandantenbewertungen (z.B. 24 bis 86)
-- consultationType: z.B. "Vor-Ort-Termin & Sofort-Online-Beratung", "Bundesweite Vertretung"
-- legalAidAccepted: boolean (true = Beratungshilfe & Prozesskostenhilfe PKH wird akzeptiert)
-- distanceEstimate: z.B. "Zentrum / ca. 1.5 km entfernt" oder "Zentral gelegen in ${plzOrCity}"
-- summary: 1-2 prägnante Sätze zur Kanzlei-Expertise und Schnelligkeit bei Fristsachen.`;
-
-    const response = await generateContentWithRetry(ai, {
-      contents: prompt,
+    const searchResponse = await generateContentWithRetry(ai, {
+      contents: searchPrompt,
       config: {
-        systemInstruction: "Du bist der intelligente Anwalts- und Kanzleifinder des Gesetze-Scanners. Liefere sofort nutzbare, direkt kontaktierbare Kanzleivorschläge mit Adressen, Telefonnummern und Profilen.",
+        tools: [{ googleSearch: {} }]
+      }
+    });
+
+    const webSearchText = searchResponse.text || "";
+    const groundingChunks = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+    // Step 2: Structure the real searched data into a clean JSON response
+    const parsePrompt = `Hier sind die real recherchierten Daten aus der Websuche zu Rechtsanwälten in "${plzOrCity}" für das Fachgebiet "${field}":
+
+${webSearchText}
+
+Wandle diese realen Kanzleien in das geforderte JSON-Format um. Übernimm NUR real existierende Namen, echte Adressen, Telefonnummern und Webseiten aus dem Text. Wenn keine E-Mail bekannt ist, lass das Feld leer.`;
+
+    const structuredResponse = await generateContentWithRetry(ai, {
+      contents: parsePrompt,
+      config: {
+        systemInstruction: "Du bist der amtliche und geprüfte Kanzleifinder des Gesetze-Scanners. Verwende ausschließlich reale Daten aus der Websuche.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -953,31 +959,20 @@ Gib für jede Kanzlei folgendes JSON-Format aus:
       }
     });
 
-    if (response.text) {
-      return res.json(JSON.parse(response.text.trim()));
+    if (structuredResponse.text) {
+      const parsedData = JSON.parse(structuredResponse.text.trim());
+      // Attach grounding source references if available
+      parsedData.sources = groundingChunks
+        .map((chunk: any) => chunk.web)
+        .filter((w: any) => w && w.uri && w.title);
+
+      return res.json(parsedData);
     }
     throw new Error("Keine Kanzleidaten erzeugt");
   } catch (err: any) {
-    console.warn("Lawyer finder fallback:", err);
-    return res.json({
-      locationDetected: plzOrCity,
-      lawyers: [
-        {
-          name: `Fachanwaltskanzlei für ${field}`,
-          title: `Fachanwalt für ${field}`,
-          address: `Zentrale Lage, ${plzOrCity}`,
-          phone: `0800 / 5566778`,
-          email: `kanzlei@fachanwalt-${plzOrCity.toLowerCase().replace(/[^a-z0-9]/g, '')}.de`,
-          website: `https://anwaltauskunft.de/anwaltssuche`,
-          specializations: [field, "Fristgebundene Eilsachen", "Außergerichtliche Abwehr", "Gerichtsvertretung"],
-          rating: 4.9,
-          reviewsCount: 42,
-          consultationType: "Erstberatung vor Ort & Video-Call",
-          legalAidAccepted: true,
-          distanceEstimate: `Zentral in ${plzOrCity}`,
-          summary: `Spezialisierte Fachkanzlei mit Schwerpunkt auf schneller Fristprüfung und Sofort-Erstberatung im ${field}.`
-        }
-      ]
+    console.warn("Real lawyer finder error:", err);
+    return res.status(500).json({
+      error: "Die Live-Suche nach echten Kanzleien konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut oder nutzen Sie das amtliche BRAV-Register."
     });
   }
 });
