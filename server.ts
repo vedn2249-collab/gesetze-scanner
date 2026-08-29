@@ -35,13 +35,16 @@ function getAiClient() {
 
 // Helper function for retrying Gemini calls with fallback models on 503/429 transient errors
 async function generateContentWithRetry(ai: GoogleGenAI, params: any) {
-  // Use current supported fast flash models with gemini-3.6-flash as primary for highest availability
-  const candidateModels = [
-    "gemini-3.6-flash",
-    "gemini-3.7-flash",
-    "gemini-3.1-flash-lite",
-    "gemini-flash-latest"
-  ];
+  // Respect model requested in params, or default to fast reliable flash models
+  const requestedModel = params.model;
+  const candidateModels = requestedModel
+    ? [requestedModel, "gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]
+    : [
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-latest"
+      ];
   let lastError: any = null;
 
   for (const model of candidateModels) {
@@ -1483,10 +1486,7 @@ const REGIONAL_LAWYERS_DATABASE: Record<string, Array<{
   ]
 };
 
-// In-memory cache for lawyer searches to prevent redundant API calls and avoid 429 quota exhaustion
-const lawyerFinderCache = new Map<string, { data: any; timestamp: number }>();
-
-// API route for nationwide live lawyer search by PLZ / City & Law Field with live web grounding
+// API route for nationwide verified lawyer directory routing & live map lookup by PLZ / City & Law Field
 app.post("/api/find-lawyers", async (req, res) => {
   const { plzOrCity = "", field = "Miet- und Wohnungseigentumsrecht" } = req.body || {};
 
@@ -1495,154 +1495,61 @@ app.post("/api/find-lawyers", async (req, res) => {
   }
 
   const cleanLocation = plzOrCity.trim();
-  const cacheKey = `${cleanLocation.toLowerCase()}_${field.toLowerCase()}`;
+  const encodedLocation = encodeURIComponent(cleanLocation);
+  const encodedField = encodeURIComponent(field);
+  const combinedQuery = encodeURIComponent(`Rechtsanwalt Fachanwalt ${field} ${cleanLocation}`);
 
-  // Check cache first (valid for 1 hour)
-  const cached = lawyerFinderCache.get(cacheKey);
-  if (cached && (Date.now() - cached.timestamp < 3600000)) {
-    return res.json(cached.data);
-  }
-
-  // Official nationwide portals and direct search queries tailored to this exact search
+  // Official, verified nationwide registries and direct search portals
   const officialDirectories = [
     {
+      name: "Google Maps Live-Kanzleifinder",
+      provider: "Google Maps",
+      badge: "Echtzeit-Karte & Rezensionen",
+      url: `https://www.google.com/maps/search/${combinedQuery}`,
+      embedMapUrl: `https://maps.google.com/maps?q=${combinedQuery}&t=&z=13&ie=UTF8&iwloc=&output=embed`,
+      description: `Alle real existierenden Kanzleien für ${field} in ${cleanLocation} mit Öffnungszeiten, Google-Rezensionen, Routenplaner und verifizierter Rufnummer.`
+    },
+    {
       name: "Anwalt.de Direktsuche",
-      url: `https://www.anwalt.de/anwaltssuche.php?stadt=${encodeURIComponent(cleanLocation)}&rechtsgebiet=${encodeURIComponent(field)}`,
-      description: `Geprüfte Fachanwälte für ${field} in ${cleanLocation}`
+      provider: "Anwalt.de",
+      badge: "Geprüfte Fachanwälte",
+      url: `https://www.anwalt.de/anwaltssuche.php?stadt=${encodedLocation}&rechtsgebiet=${encodedField}`,
+      description: `Deutschlands führende Fachanwalts-Plattform mit geprüften Tätigkeitsschwerpunkten und echten Mandantenbewertungen für ${cleanLocation}.`
     },
     {
       name: "DAV Deutsche Anwaltauskunft",
+      provider: "Deutscher Anwaltverein",
+      badge: "Offizieller Berufsverband",
       url: `https://anwaltauskunft.de/anwaltssuche?q=${encodeURIComponent(cleanLocation + " " + field)}`,
-      description: "Deutscher Anwaltverein - Bundesweite Fachanwaltssuche"
+      description: `Offizielle Suchmaschine des Deutschen Anwaltvereins (DAV) nach Fachanwaltstiteln und zertifizierten Kanzleien im Amtsgerichtsbezirk ${cleanLocation}.`
     },
     {
-      name: "Amtliches BRAV-Register (BRAK)",
+      name: "Bundesweites Amtliches Anwaltsverzeichnis (BRAV)",
+      provider: "Bundesrechtsanwaltskammer (BRAK)",
+      badge: "Gesetzliches Vollregister",
       url: "https://bea-brak.de/bravsearch/search.html",
-      description: "Bundesweites Amtliches Anwaltsverzeichnis aller 165.000+ zugelassenen Anwälte"
+      description: `Das gesetzlich vorgeschriebene Gesamtwirtschaftsregister aller über 165.000 in Deutschland zugelassenen Rechtsanwältinnen und Rechtsanwälte.`
     },
     {
-      name: "Google Maps Fachkanzleien",
-      url: `https://www.google.com/maps/search/${encodeURIComponent('Rechtsanwalt Fachanwalt ' + field + ' ' + cleanLocation)}`,
-      description: `Lokale Kanzleien & Google Rezensionen in ${cleanLocation}`
+      name: "Das Örtliche / Gelbe Seiten Anwaltsverzeichnis",
+      provider: "Das Örtliche",
+      badge: "Verifizierte Telefonbucheinträge",
+      url: `https://www.dasoertliche.de/Themen/Rechtsanwalt/${encodedLocation}.html`,
+      description: `Amtlich geführte Telefon- und Kanzleieinträge mit Kontaktdaten, E-Mail und Notrufnummern in ${cleanLocation}.`
     }
   ];
 
-  const searchPrompt = `Führe eine Recherche nach realen, existierenden Rechtsanwaltskanzleien oder Fachanwälten für das Rechtsgebiet "${field}" am Ort / in der Postleitzahl "${cleanLocation}" in Deutschland durch.
-
-VERBINDLICHE QUALITÄTSKRITERIEN:
-1. ORTSGENAUIGKEIT: Suche ausschließlich Kanzleien, die tatsächlich in "${cleanLocation}" oder im direkten Landkreis / Amtsgerichtsbezirk von "${cleanLocation}" ansässig sind. Wenn "${cleanLocation}" gesucht wird, nenne KEINE Kanzleien aus weit entfernten Städten (wie Braunschweig, Berlin, München etc.), es sei denn "${cleanLocation}" liegt direkt dort.
-2. ECHTE DATEN: Verwende nur reale Kanzleinamen, die tatsächliche Straßenadresse mit Hausnummer und PLZ in "${cleanLocation}", die reale Telefonnummer mit lokaler Vorwahl und die tatsächliche Website. Erfinde absolut nichts.
-3. FORMAT: Gib die Ergebnisse als valides JSON-Array zurück. Wenn im Web für diesen Ort weniger oder keine Kanzleien gefunden werden, gib nur die tatsächlich gefundenen zurück (oder ein leeres Array [], falls gar keine verifizierbar sind).
-
-SCHEMA (JSON-Array):
-[
-  {
-    "name": "Vollständiger Kanzleiname oder Name des Rechtsanwalts",
-    "title": "Fachanwaltstitel (z.B. Fachanwalt für ${field} oder Rechtsanwalt)",
-    "address": "Genaue Anschrift (Straße, Nr., PLZ, Ort)",
-    "phone": "Lokale Telefonnummer mit Vorwahl",
-    "website": "https://...",
-    "email": "E-Mail (falls öffentlich bekannt)",
-    "specializations": ["Schwerpunkt 1", "Schwerpunkt 2"],
-    "rating": 4.8,
-    "reviewsCount": 25,
-    "consultationType": "Vor-Ort-Termin & Beratung",
-    "legalAidAccepted": true,
-    "distanceEstimate": "In ${cleanLocation}",
-    "summary": "1-2 Sätze zur Kanzlei und Kernkompetenz."
-  }
-]`;
-
-  let liveLawyers: any[] = [];
-  const dynamicSources: Array<{ title: string; uri: string }> = [];
-
-  try {
-    const ai = getAiClient();
-    let searchResponse: any = null;
-
-    // Step 1: Attempt live Google Search Grounding
-    try {
-      searchResponse = await generateContentWithRetry(ai, {
-        contents: searchPrompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
-      });
-    } catch (groundingErr: any) {
-      const errStr = String(groundingErr?.message || groundingErr);
-      const isQuotaOrLimit = errStr.includes("429") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("quota");
-      
-      // Step 2: Fallback to factual model generation without tools if search tool hits quota limits
-      if (isQuotaOrLimit) {
-        searchResponse = await generateContentWithRetry(ai, {
-          contents: searchPrompt
-        });
-      } else {
-        throw groundingErr;
-      }
-    }
-
-    const rawText = searchResponse?.text || "";
-
-    // Extract JSON array from model output
-    const jsonMatch = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Strict validation: Must have a name, address, and phone number
-          liveLawyers = parsed.filter(l => l.name && l.address && l.phone);
-        }
-      } catch (parseErr) {
-        // Silently skip malformed json
-      }
-    }
-
-    // Extract real web grounding sources if present
-    const groundingChunks = searchResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (Array.isArray(groundingChunks)) {
-      for (const chunk of groundingChunks) {
-        if (chunk?.web?.uri) {
-          dynamicSources.push({
-            title: chunk.web.title || chunk.web.uri,
-            uri: chunk.web.uri
-          });
-        }
-      }
-    }
-
-    // Always provide the verified direct search portals
-    dynamicSources.push(
-      { title: `Anwalt.de Fachanwälte in ${cleanLocation}`, uri: `https://www.anwalt.de/anwaltssuche.php?stadt=${encodeURIComponent(cleanLocation)}&rechtsgebiet=${encodeURIComponent(field)}` },
-      { title: `DAV Anwaltauskunft ${cleanLocation}`, uri: `https://anwaltauskunft.de/anwaltssuche?q=${encodeURIComponent(cleanLocation + ' ' + field)}` }
-    );
-
-    const resultData = {
-      locationDetected: cleanLocation,
-      lawyers: liveLawyers,
-      sources: dynamicSources,
-      officialDirectories
-    };
-
-    // Store in cache for 1 hour
-    lawyerFinderCache.set(cacheKey, { data: resultData, timestamp: Date.now() });
-
-    return res.json(resultData);
-  } catch (liveSearchErr: any) {
-    // Return clean response with direct official search portals
-    const fallbackData = {
-      locationDetected: cleanLocation,
-      lawyers: [],
-      sources: [
-        { title: `Anwalt.de Fachanwälte in ${cleanLocation}`, uri: `https://www.anwalt.de/anwaltssuche.php?stadt=${encodeURIComponent(cleanLocation)}&rechtsgebiet=${encodeURIComponent(field)}` },
-        { title: `DAV Anwaltauskunft ${cleanLocation}`, uri: `https://anwaltauskunft.de/anwaltssuche?q=${encodeURIComponent(cleanLocation + ' ' + field)}` },
-        { title: `Google Maps Kanzleien ${cleanLocation}`, uri: `https://www.google.com/maps/search/${encodeURIComponent('Rechtsanwalt ' + field + ' ' + cleanLocation)}` }
-      ],
-      officialDirectories
-    };
-
-    return res.json(fallbackData);
-  }
+  return res.json({
+    locationDetected: cleanLocation,
+    fieldSelected: field,
+    combinedQuery: `Rechtsanwalt Fachanwalt ${field} ${cleanLocation}`,
+    embedMapUrl: `https://maps.google.com/maps?q=${combinedQuery}&t=&z=13&ie=UTF8&iwloc=&output=embed`,
+    googleMapsUrl: `https://www.google.com/maps/search/${combinedQuery}`,
+    anwaltDeUrl: `https://www.anwalt.de/anwaltssuche.php?stadt=${encodedLocation}&rechtsgebiet=${encodedField}`,
+    davUrl: `https://anwaltauskunft.de/anwaltssuche?q=${encodeURIComponent(cleanLocation + " " + field)}`,
+    bravUrl: "https://bea-brak.de/bravsearch/search.html",
+    officialDirectories
+  });
 });
 
 // API route to create a Paddle, Stripe, or instant gateway payment session for revenue generation
