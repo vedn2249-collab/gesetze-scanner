@@ -66,6 +66,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
 import { syncUserDataToFirestore } from "./lib/userSync";
 import { AuthModal } from "./components/AuthModal";
+import StarryBackground from "./components/StarryBackground";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -1614,7 +1615,11 @@ export default function App() {
   };
 
   return (
-    <div id="main_app_container" className="min-h-screen bg-black text-gray-200 font-sans selection:bg-amber-500 selection:text-black pb-12">
+    <div id="main_app_container" className="min-h-screen bg-black text-gray-200 font-sans selection:bg-amber-500 selection:text-black pb-12 relative">
+      {/* 3D Animated Starry Background with Shooting Stars */}
+      <StarryBackground />
+
+      <div className="relative z-10">
       {/* Top User Auth & Account Bar */}
       <div className="bg-zinc-950 border-b border-zinc-800/80 py-2.5 px-4 text-xs">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
@@ -4454,6 +4459,7 @@ export default function App() {
         initialMode={authModalMode}
         titleNotice={authModalNotice}
       />
+      </div>
     </div>
   );
 }

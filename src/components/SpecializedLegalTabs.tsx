@@ -1539,16 +1539,23 @@ export function LawyerSearchView() {
 
             {/* Embedded Live Google Maps Frame */}
             <div className="w-full h-80 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 relative">
-              <iframe
-                title="Google Maps Kanzleien"
-                src={embedMapUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-full"
-              />
+              {embedMapUrl ? (
+                <iframe
+                  title="Google Maps Kanzleien"
+                  src={embedMapUrl}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xs font-mono">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2 text-amber-400" />
+                  Lade interaktive Google Maps Karte...
+                </div>
+              )}
             </div>
             <p className="text-[11px] text-zinc-400 font-mono flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0" />
