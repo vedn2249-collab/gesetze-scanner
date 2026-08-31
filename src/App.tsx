@@ -58,9 +58,10 @@ import {
   AudioToolView, 
   KiCoachView, 
   SelfRepresentativeGuideView, 
-  LawyerSearchView 
+  LawyerSearchView,
+  ImmigrationLawView 
 } from "./components/SpecializedLegalTabs";
-import { Car } from "lucide-react";
+import { Car, Globe } from "lucide-react";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
@@ -197,11 +198,56 @@ const PRESET_CASES: LegalCategory[] = [
     icon: "AlertTriangle",
     exampleText: "Mein Nachbar hat ohne Rücksprache und ohne sichtbare Baugenehmigung eine massive, 3,50 Meter hohe Mauer direkt an meine Grundstücksgrenze gebaut. Dadurch wird mein Garten extrem schattig und versiegelt. Die Baubehörde reagiert nicht. Welche zivilrechtlichen Abwehransprüche habe ich?",
     relevantParagraphs: ["§ 1004 BGB", "§ 906 BGB", "§ 912 BGB"],
+  },
+  {
+    id: "case-17",
+    title: "Einbürgerung nach StAG Reform (§ 10 StAG)",
+    description: "Antrag auf Einbürgerung nach 5 Jahren rechtmäßigem Aufenthalt. Doppelpass und B1 Sprachnachweis vorhanden.",
+    icon: "Award",
+    exampleText: "Ich lebe seit 5 Jahren ununterbrochen und rechtmäßig in Deutschland, habe eine feste Vollzeitanstellung und beziehe kein Bürgergeld. Ich besitze ein B1-Sprachzertifikat und habe den Test 'Leben in Deutschland' bestanden. Nach der neuen StAG-Reform möchte ich meine bisherige Staatsangehörigkeit behalten (Doppelpass) und die deutsche Staatsbürgerschaft beantragen.",
+    relevantParagraphs: ["§ 10 StAG", "§ 8 StAG", "§ 12b StAG"],
+  },
+  {
+    id: "case-18",
+    title: "Fiktionsbescheinigung (§ 81 Abs. 4 AufenthG)",
+    description: "Aufenthaltstitel läuft in 10 Tagen ab, Ausländerbehörde vergibt keine Termine. Gefahr für Arbeitsverhältnis.",
+    icon: "ShieldAlert",
+    exampleText: "Mein Aufenthaltstitel läuft in 10 Tagen ab. Ich habe bereits vor 6 Wochen einen schriftlichen Antrag auf Verlängerung bei der Ausländerbehörde eingereicht, erhalte jedoch keine Antwort oder Termine. Mein Arbeitgeber verlangt einen Nachweis, da er mich sonst freistellen oder kündigen will. Wie setze ich die gesetzliche Fiktionswirkung nach § 81 Abs. 4 AufenthG durch?",
+    relevantParagraphs: ["§ 81 Abs. 4 AufenthG", "§ 4 AufenthG", "§ 75 VwGO"],
+  },
+  {
+    id: "case-19",
+    title: "Untätigkeitsklage Ausländeramt (§ 75 VwGO)",
+    description: "Antrag auf Niederlassungserlaubnis / Einbürgerung liegt seit über 6 Monaten ohne Bearbeitung bei der Behörde.",
+    icon: "Scale",
+    exampleText: "Ich habe vor über 6 Monaten alle vollständigen Unterlagen für meine Niederlassungserlaubnis nach § 18g / § 9 AufenthG bei der Ausländerbehörde eingereicht. Auf E-Mails und Einschreiben wird überhaupt nicht reagiert. Ich möchte nun förmlich eine 14-tägige Frist setzen und Untätigkeitsklage beim Verwaltungsgericht erheben.",
+    relevantParagraphs: ["§ 75 VwGO", "§ 9 AufenthG", "§ 18g AufenthG", "§ 10 StAG"],
   }
 ];
 
 // Curated Law database for Tab 2
 const LAW_DATABASE: LawEntry[] = [
+  {
+    code: "§ 10 StAG",
+    title: "Einbürgerungsanspruch (StAG Reform)",
+    paragraph: "Staatsangehörigkeitsgesetz",
+    content: "Ein Ausländer, der seit fünf Jahren (bzw. drei Jahren bei besonderen Integrationsleistungen) rechtmäßig seinen gewöhnlichen Aufenthalt im Inland hat, ist auf Antrag einzubürgern, wenn er den Lebensunterhalt ohne Bürgergeld bestreitet, Deutsch B1 beherrscht, den Einbürgerungstest bestanden hat und sich zur freiheitlichen demokratischen Grundordnung bekennt. Mehrstaatigkeit ist uneingeschränkt zulässig.",
+    tacticalNote: "Wichtigste Neuerung: Die Aufgabe der bisherigen Staatsbürgerschaft ist entfallen. Bei Untätigkeit der Behörde von über 3 Monaten kann nach § 75 VwGO Untätigkeitsklage erhoben werden."
+  },
+  {
+    code: "§ 81 Abs. 4 AufenthG",
+    title: "Fiktionswirkung kraft Gesetzes",
+    paragraph: "Aufenthaltsgesetz",
+    content: "Beantragt ein Ausländer die Verlängerung seines Aufenthaltstitels oder die Erteilung eines anderen Aufenthaltstitels rechtzeitig vor Ablauf, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.",
+    tacticalNote: "Die Schutzwirkung tritt automatisch kraft Gesetzes ein, wenn der Antrag vor Ablauf nachweisbar eingegangen ist. Der Arbeitgeber darf das Arbeitsverhältnis nicht auflösen."
+  },
+  {
+    code: "§ 75 VwGO",
+    title: "Untätigkeitsklage gegen Behörden",
+    paragraph: "Verwaltungsgerichtsordnung",
+    content: "Ist über einen Antrag auf Vornahme eines Verwaltungsakts ohne zureichenden Grund in angemessener Frist (mindestens drei Monate) sachlich nicht entschieden worden, ist die Klage beim Verwaltungsgericht zulässig.",
+    tacticalNote: "Reine Überlastung oder Personalmangel der Ausländerbehörde rechtfertigt nach BVerwG-Rechtsprechung keine Verzögerung. Vor Klageerhebung stets 14-Tage-Frist mit Klagedrohung setzen."
+  },
   {
     code: "§ 136 StPO",
     title: "Aussageverweigerungsrecht",
@@ -1843,6 +1889,19 @@ export default function App() {
                 <Search className="w-3.5 h-3.5" />
                 <span className="truncate">10. Anwalts-Finder</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("auslaenderrecht")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "auslaenderrecht"
+                    ? "bg-emerald-400 text-black shadow-md font-extrabold"
+                    : "text-emerald-400/80 hover:text-emerald-300 hover:bg-zinc-900"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="truncate">11. Ausländerrecht & StAG</span>
+              </button>
             </div>
           </div>
 
@@ -2985,6 +3044,21 @@ export default function App() {
               transition={{ duration: 0.3 }}
             >
               <LawyerSearchView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 11. AUSLÄNDER- & MIGRATIONSRECHT (AufenthG / StAG / VwGO) */}
+        <AnimatePresence mode="wait">
+          {activeTab === "auslaenderrecht" && (
+            <motion.div
+              key="auslaenderrecht_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ImmigrationLawView />
             </motion.div>
           )}
         </AnimatePresence>

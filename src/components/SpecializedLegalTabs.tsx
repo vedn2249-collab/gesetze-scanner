@@ -34,7 +34,13 @@ import {
   Award,
   Building,
   UserCheck,
-  Loader2
+  Loader2,
+  Globe,
+  Languages,
+  FileCheck,
+  ArrowRight,
+  ChevronRight,
+  ShieldAlert
 } from 'lucide-react';
 import { calculateLegalCosts, calculatePKHEligibility, checkStatuteOfLimitations, downloadDeadlineICSFile, downloadBeAXmlFile } from '../legalTools';
 
@@ -1469,6 +1475,7 @@ export function LawyerSearchView() {
           onChange={e => setField(e.target.value)}
           className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white font-mono"
         >
+          <option>Migrations- & Ausländerrecht</option>
           <option>Miet- und Wohnungseigentumsrecht</option>
           <option>Strafrecht & Verkehrsrecht</option>
           <option>Arbeitsrecht & Kündigungsschutz</option>
@@ -1728,3 +1735,713 @@ export function LawyerSearchView() {
     </div>
   );
 }
+
+// ==========================================
+// 11. AUSLÄNDER- & MIGRATIONSRECHT (TAB 11) - GEPRÜFTE GESETZESLOGIK (AufenthG / StAG / VwGO)
+// ==========================================
+export function ImmigrationLawView({ onNavigateToLawyers }: { onNavigateToLawyers?: () => void }) {
+  const [subTab, setSubTab] = useState<'einbuergerung' | 'fiktion' | 'untaetigkeit' | 'daueraufenthalt' | 'vorlagen'>('einbuergerung');
+
+  // Einbürgerungs-Rechner State (§ 10 StAG)
+  const [yearsResident, setYearsResident] = useState(5);
+  const [langLevel, setLangLevel] = useState<'none' | 'a1' | 'a2' | 'b1' | 'b2' | 'c1_c2'>('b1');
+  const [hasPassedCitizenshipTest, setHasPassedCitizenshipTest] = useState(true);
+  const [isLivelihoodSecured, setIsLivelihoodSecured] = useState(true);
+  const [acceptsConstitution, setAcceptsConstitution] = useState(true);
+  const [isCleanRecord, setIsCleanRecord] = useState(true);
+  const [hasSpecialAchievements, setHasSpecialAchievements] = useState(false);
+
+  // Fiktionsbescheinigung State (§ 81 Abs. 4 AufenthG)
+  const [expiryDate, setExpiryDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [applicationDate, setApplicationDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [hasSubmissionProof, setHasSubmissionProof] = useState(true);
+
+  // Untätigkeitsklage State (§ 75 VwGO)
+  const [initialFilingDate, setInitialFilingDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 4);
+    return d.toISOString().split('T')[0];
+  });
+  const [applicationType, setApplicationType] = useState('Einbürgerungsantrag (§ 10 StAG)');
+
+  // Copy Feedback
+  const [copiedTemplate, setCopiedTemplate] = useState<string | null>(null);
+
+  // Evaluation logic for Einbürgerung
+  const minRequiredYears = hasSpecialAchievements || langLevel === 'c1_c2' ? 3 : 5;
+  const isYearsSufficient = yearsResident >= minRequiredYears;
+  const isLangSufficient = ['b1', 'b2', 'c1_c2'].includes(langLevel);
+  const isEligibleForCitizenship = isYearsSufficient && isLangSufficient && hasPassedCitizenshipTest && isLivelihoodSecured && acceptsConstitution && isCleanRecord;
+
+  // Evaluation logic for Fiktionswirkung (§ 81 Abs. 4 AufenthG)
+  const isTimelySubmitted = new Date(applicationDate) <= new Date(expiryDate);
+
+  // Evaluation logic for Untätigkeitsklage (§ 75 VwGO)
+  const calculateUntaetigkeitDays = () => {
+    const filing = new Date(initialFilingDate).getTime();
+    const now = new Date().getTime();
+    const diffDays = Math.floor((now - filing) / (1000 * 60 * 60 * 24));
+    const threeMonthsDays = 90;
+    const isStatutoryPeriodPassed = diffDays >= threeMonthsDays;
+    const overdueDays = diffDays - threeMonthsDays;
+    return { diffDays, isStatutoryPeriodPassed, overdueDays };
+  };
+
+  const untaetigkeitInfo = calculateUntaetigkeitDays();
+
+  const handleCopyText = (text: string, templateId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTemplate(templateId);
+    setTimeout(() => setCopiedTemplate(null), 2500);
+  };
+
+  const handleDownloadDraft = (text: string, filename: string) => {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="p-6 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-400">
+            <Globe className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">Amtlich Verankerte Gesetzeslogik</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">StAG Reform 2024/2026</span>
+            </div>
+            <h3 className="text-xl font-bold font-display text-white mt-0.5">Ausländer- & Migrationsrecht (AufenthG / StAG / VwGO)</h3>
+            <p className="text-xs text-zinc-400 font-sans mt-0.5">
+              Rechtssichere Prüfung für Einbürgerung, Fiktionsbescheinigungen, Untätigkeitsklagen gegen Ausländerbehörden und Niederlassungserlaubnisse.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {onNavigateToLawyers && (
+            <button
+              onClick={onNavigateToLawyers}
+              className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-amber-400 text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Anwälte vor Ort</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Sub-Navigation Tabs */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 rounded-xl bg-black border border-zinc-800">
+        <button
+          onClick={() => setSubTab('einbuergerung')}
+          className={`px-3 py-2.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            subTab === 'einbuergerung'
+              ? 'bg-amber-400 text-black shadow-gold-glow'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <Award className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">1. Einbürgerung (StAG)</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('fiktion')}
+          className={`px-3 py-2.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            subTab === 'fiktion'
+              ? 'bg-amber-400 text-black shadow-gold-glow'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">2. Fiktionsschutz (§ 81)</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('untaetigkeit')}
+          className={`px-3 py-2.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            subTab === 'untaetigkeit'
+              ? 'bg-amber-400 text-black shadow-gold-glow'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">3. Untätigkeit (§ 75 VwGO)</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('daueraufenthalt')}
+          className={`px-3 py-2.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            subTab === 'daueraufenthalt'
+              ? 'bg-amber-400 text-black shadow-gold-glow'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <Compass className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">4. Blaue Karte & Dauer</span>
+        </button>
+
+        <button
+          onClick={() => setSubTab('vorlagen')}
+          className={`px-3 py-2.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            subTab === 'vorlagen'
+              ? 'bg-amber-400 text-black shadow-gold-glow'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">5. Musterschreiben</span>
+        </button>
+      </div>
+
+      {/* TAB 1: EINBÜRGERUNGS-RECHNER */}
+      {subTab === 'einbuergerung' && (
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-amber-400/5 border border-amber-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Award className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <h4 className="text-sm font-bold text-white font-mono">Neues Staatsangehörigkeitsgesetz (StAG)</h4>
+                <p className="text-xs text-zinc-300 font-sans">
+                  Reguläre Einbürgerung bereits nach <strong>5 Jahren</strong> (bzw. <strong>3 Jahren</strong> bei Turbo-Integration). Mehrstaatigkeit / Doppelpass ist seit Juni 2024 uneingeschränkt gesetzlich erlaubt!
+                </p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold shrink-0">
+              § 10 StAG i.d.F. 2024/2026
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Input Controls */}
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                Voraussetzungen eingeben
+              </h4>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-zinc-300">Rechtmäßiger Voraufenthalt in Deutschland:</span>
+                  <span className="text-amber-400 font-bold">{yearsResident} {yearsResident === 1 ? 'Jahr' : 'Jahre'}</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={12}
+                  value={yearsResident}
+                  onChange={e => setYearsResident(Number(e.target.value))}
+                  className="w-full accent-amber-400 bg-zinc-800 h-2 rounded-lg cursor-pointer"
+                />
+                <p className="text-[11px] text-zinc-500 font-sans">
+                  Gesetzliche Mindestdauer: 5 Jahre (oder 3 Jahre bei C1-Deutsch / herausragenden Leistungen).
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-300 block">Deutsch-Sprachzertifikat (GER):</label>
+                <select
+                  value={langLevel}
+                  onChange={e => setLangLevel(e.target.value as any)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                >
+                  <option value="none">Kein Nachweis / Unter A1 (Nicht ausreichend)</option>
+                  <option value="a1">A1 Grundkenntnisse (Nicht ausreichend)</option>
+                  <option value="a2">A2 Grundkenntnisse (Nicht ausreichend)</option>
+                  <option value="b1">B1 Zertifikat (Gesetzlicher Standard § 10 Abs. 1 Nr. 6 StAG)</option>
+                  <option value="b2">B2 Fortgeschritten</option>
+                  <option value="c1_c2">C1 / C2 Fachkundig (Berechtigt zum 3-Jahre-Turbo!)</option>
+                </select>
+              </div>
+
+              <div className="space-y-2.5 pt-2 border-t border-zinc-900">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={hasPassedCitizenshipTest}
+                    onChange={e => setHasPassedCitizenshipTest(e.target.checked)}
+                    className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                  />
+                  <span>Einbürgerungstest / Test "Leben in Deutschland" bestanden oder deutscher Schulabschluss</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={isLivelihoodSecured}
+                    onChange={e => setIsLivelihoodSecured(e.target.checked)}
+                    className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                  />
+                  <span>Vollständige Sicherung des Lebensunterhalts ohne Bürgergeld / Sozialhilfe (SGB II / XII)</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={acceptsConstitution}
+                    onChange={e => setAcceptsConstitution(e.target.checked)}
+                    className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                  />
+                  <span>Bekenntnis zur freiheitlich-demokratischen Grundordnung & Antisemitismus-Ausschluss</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={isCleanRecord}
+                    onChange={e => setIsCleanRecord(e.target.checked)}
+                    className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                  />
+                  <span>Keine strafrechtlichen Verurteilungen (ausgenommen Bagatellen bis 90 Tagessätze)</span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={hasSpecialAchievements}
+                    onChange={e => setHasSpecialAchievements(e.target.checked)}
+                    className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                  />
+                  <span>Besondere Integrationsleistungen (z.B. ehrenamtliches Engagement, herausragende Ausbildung)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Assessment Result Panel */}
+            <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                  <span className="text-xs font-mono text-zinc-400 uppercase">Gesetzlicher Status</span>
+                  <span className={`px-2.5 py-1 rounded text-xs font-mono font-bold ${
+                    isEligibleForCitizenship
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  }`}>
+                    {isEligibleForCitizenship ? '✅ Rechtsanspruch erfüllt (§ 10 StAG)' : '⚠️ Voraussetzungen noch unvollständig'}
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div className="p-3 rounded-lg bg-black/60 border border-zinc-800">
+                    <span className="text-[11px] font-mono text-zinc-400 block">Erforderliche Aufenthaltsdauer:</span>
+                    <p className="text-xs font-bold text-white mt-0.5">
+                      {minRequiredYears} Jahre erforderlich • Sie haben {yearsResident} Jahre ({isYearsSufficient ? '✅ Erfüllt' : `❌ Noch ${minRequiredYears - yearsResident} Jahr(e) bis zum Anspruch`})
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-black/60 border border-zinc-800">
+                    <span className="text-[11px] font-mono text-zinc-400 block">Sprachzertifikat:</span>
+                    <p className="text-xs font-bold text-white mt-0.5">
+                      {isLangSufficient ? `✅ ${langLevel.toUpperCase()} ist gesetzlich ausreichend` : '❌ Mindestens B1 Zertifikat gesetzlich zwingend erforderlich'}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-black/60 border border-zinc-800">
+                    <span className="text-[11px] font-mono text-zinc-400 block">Mehrstaatigkeit (Doppelpass):</span>
+                    <p className="text-xs font-bold text-emerald-400 mt-0.5">
+                      ✅ 100% erlaubt: Sie müssen Ihre bisherige Staatsangehörigkeit NICHT abgeben!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-800">
+                <button
+                  onClick={() => setSubTab('vorlagen')}
+                  className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs rounded-xl transition-all cursor-pointer shadow-gold-glow flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Antrags-Musterschreiben öffnen</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: FIKTIONSBESCHEINIGUNG & SCHUTZ (§ 81 Abs. 4 AufenthG) */}
+      {subTab === 'fiktion' && (
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
+            <h4 className="text-sm font-bold text-blue-300 font-mono flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-400" />
+              Gesetzliche Fiktionswirkung kraft Gesetzes (§ 81 Abs. 4 AufenthG)
+            </h4>
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              Wenn Sie Ihren Antrag auf Verlängerung oder Erteilung <strong>vor Ablauf</strong> Ihres aktuellen Aufenthaltstitels gestellt haben, gilt Ihr bisheriger Aufenthaltstitel <strong>inklusive aller Arbeitsrechte kraft Bundesgesetz fort</strong>, bis die Ausländerbehörde eine rechtskräftige Entscheidung trifft!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                Fristen & Nachweise eingeben
+              </h4>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-300 block">Ablaufdatum des bisherigen Aufenthaltstitels:</label>
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={e => setExpiryDate(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-300 block">Datum der Antragstellung / Terminanfrage:</label>
+                <input
+                  type="date"
+                  value={applicationDate}
+                  onChange={e => setApplicationDate(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-zinc-300 pt-2">
+                <input
+                  type="checkbox"
+                  checked={hasSubmissionProof}
+                  onChange={e => setHasSubmissionProof(e.target.checked)}
+                  className="mt-0.5 rounded accent-amber-400 bg-zinc-900 border-zinc-700 w-4 h-4"
+                />
+                <span>Ich habe einen schriftlichen Nachweis über den Antragseingang (z.B. Online-Portal-Eingangsbestätigung, Einschreiben-Rückschein oder E-Mail-Sendeprotokoll).</span>
+              </label>
+            </div>
+
+            <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-xs font-mono text-zinc-400 uppercase block mb-3">Rechtliche Schutzbewertung</span>
+
+                {isTimelySubmitted && hasSubmissionProof ? (
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
+                      <ShieldCheck className="w-5 h-5" />
+                      <span>VOLLER SCHUTZ (§ 81 Abs. 4 AufenthG AKTIV)</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Ihr Antrag ging <strong>rechtzeitig vor Ablauf</strong> ein. Ihr Aufenthalt ist vollkommen legal. Ihr Arbeitgeber darf Ihr Arbeitsverhältnis <strong>nicht</strong> wegen angeblich fehlender Erlaubnis beenden. Sie haben einen Rechtsanspruch auf sofortige Aushändigung einer Fiktionsbescheinigung nach § 81 Abs. 4 AufenthG.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold font-mono text-sm">
+                      <AlertCircle className="w-5 h-5" />
+                      <span>ACHTUNG: FRIST- ODER NACHWEISRISIKO</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Liegt der Antrag nach dem Ablaufdatum oder fehlt ein Eingangsbeleg, tritt die Fiktionswirkung nicht automatisch kraft Gesetzes ein (§ 81 Abs. 3 vs. Abs. 4). Holen Sie unverzüglich anwaltlichen Beistand ein.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setSubTab('vorlagen')}
+                className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs rounded-xl transition-all cursor-pointer shadow-gold-glow flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Muster: Anforderung Fiktionsbescheinigung</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: UNTÄTIGKEITSKLAGE (§ 75 VwGO) */}
+      {subTab === 'untaetigkeit' && (
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+            <h4 className="text-sm font-bold text-amber-300 font-mono flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400" />
+              Rechtsschutz bei Untätigkeit der Ausländerbehörde (§ 75 VwGO)
+            </h4>
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              Entscheidet die Ausländerbehörde nach einem förmlichen Antrag nicht innerhalb von <strong>3 Monaten</strong> ohne zureichenden sachlichen Grund, ist die <strong>Untätigkeitsklage beim Verwaltungsgericht</strong> zulässig. Reine Personalnot oder Überlastung der Behörde ist nach ständiger Rechtsprechung des Bundesverwaltungsgerichts <em>kein</em> zureichender Grund!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                Verfahrensdaten eingeben
+              </h4>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-300 block">Art des gestellten Antrags:</label>
+                <select
+                  value={applicationType}
+                  onChange={e => setApplicationType(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                >
+                  <option>Einbürgerungsantrag (§ 10 StAG)</option>
+                  <option>Niederlassungserlaubnis (§ 9 / § 18g AufenthG)</option>
+                  <option>Verlängerung Aufenthaltserlaubnis</option>
+                  <option>Familiennachzug (§§ 28, 30 AufenthG)</option>
+                  <option>Erteilung Blaue Karte EU (§ 18g AufenthG)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono text-zinc-300 block">Datum der vollständigen Antragseinreichung:</label>
+                <input
+                  type="date"
+                  value={initialFilingDate}
+                  onChange={e => setInitialFilingDate(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-xs font-sans text-zinc-400 space-y-1">
+                <span className="text-white font-bold font-mono">Taktische Empfehlung:</span>
+                <p>
+                  Vor Einreichung der Klage beim Verwaltungsgericht sollte der Behörde eine letzte <strong>Frist von 14 Tagen</strong> unter ausdrücklicher Androhung der Untätigkeitsklage gesetzt werden. Oft führt dies zur sofortigen Bearbeitung.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-xs font-mono text-zinc-400 uppercase block mb-3">Fristberechnung nach § 75 VwGO</span>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-black border border-zinc-800">
+                    <span className="text-[11px] font-mono text-zinc-400 block">Vergangene Bearbeitungszeit:</span>
+                    <span className="text-base font-bold font-mono text-white mt-0.5 block">
+                      {untaetigkeitInfo.diffDays} Tage (Gesetzliche Wartefrist: 90 Tage)
+                    </span>
+                  </div>
+
+                  {untaetigkeitInfo.isStatutoryPeriodPassed ? (
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span>KLAGEBERECHTIGT NACH § 75 VwGO</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Die 3-Monats-Frist ist seit <strong>{untaetigkeitInfo.overdueDays} Tagen</strong> überschritten. Eine Klageerhebung beim Verwaltungsgericht ist unmittelbar statthaft. Die Verfahrenskosten fallen regelmäßig der säumigen Behörde zur Last.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                      <div className="flex items-center gap-2 text-amber-400 font-bold font-mono text-sm">
+                        <Clock className="w-5 h-5" />
+                        <span>3-MONATS-FRIST NOCH NICHT ERREICHT</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Noch {Math.abs(untaetigkeitInfo.overdueDays)} Tage bis zur Klagezulässigkeit. Bereiten Sie jetzt bereits das Mahnschreiben vor.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSubTab('vorlagen')}
+                className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs rounded-xl transition-all cursor-pointer shadow-gold-glow flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Muster: Dringliche Sachstandsanfrage & Klagedrohung</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: BLAUE KARTE EU & DAUERAUFENTHALT */}
+      {subTab === 'daueraufenthalt' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-cyan-400 uppercase">🇪🇺 Blaue Karte EU (§ 18g AufenthG)</span>
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[10px] font-mono font-bold">Turbo-Daueraufenthalt</span>
+              </div>
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                Für Hochschulabsolventen und IT-Spezialisten mit Arbeitsvertrag in Deutschland.
+              </p>
+              <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 font-sans">
+                <li><strong className="text-white">Niederlassungserlaubnis nach 21 Monaten</strong> bei Nachweis von Deutschkenntnissen auf Niveau B1.</li>
+                <li><strong className="text-white">Niederlassungserlaubnis nach 27 Monaten</strong> bei Nachweis von Grundkenntnissen (A1).</li>
+                <li><strong className="text-white">Familiennachzug ohne Vorab-Sprachnachweis</strong> für den Ehegatten (§ 30 Abs. 1 Satz 3 Nr. 5 AufenthG).</li>
+              </ul>
+            </div>
+
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-emerald-400 uppercase">🇩🇪 Fachkräfteeinwanderung (§ 18c AufenthG)</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-bold">3 Jahre</span>
+              </div>
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                Für qualifizierte Fachkräfte mit anerkannter Berufsausbildung oder Studium.
+              </p>
+              <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 font-sans">
+                <li><strong className="text-white">Niederlassungserlaubnis bereits nach 3 Jahren</strong> (statt 5 Jahren).</li>
+                <li>Nachweis von mindestens 36 Monaten Pflichtbeiträgen zur Rentenversicherung.</li>
+                <li>Gesicherter Lebensunterhalt und Deutsch B1.</li>
+              </ul>
+            </div>
+
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase">💍 Ehegatten von Deutschen (§ 28 Abs. 2 AufenthG)</span>
+                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] font-mono font-bold">3 Jahre</span>
+              </div>
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                Für ausländische Ehegatten von deutschen Staatsangehörigen.
+              </p>
+              <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 font-sans">
+                <li><strong className="text-white">Niederlassungserlaubnis nach 3 Jahren</strong> bei Fortbestehen der ehelichen Lebensgemeinschaft.</li>
+                <li>Ausreichende Deutschkenntnisse (B1) und kein Ausweisungsgrund.</li>
+              </ul>
+            </div>
+
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-purple-400 uppercase">Chancenkarte (§ 20a AufenthG)</span>
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] font-mono font-bold">Punktesystem</span>
+              </div>
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                Zur gezielten Suche nach einem qualifizierten Arbeitsplatz in Deutschland für bis zu 1 Jahr.
+              </p>
+              <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4 font-sans">
+                <li>Mindestens 6 Punkte im Punktesystem (Sprache, Qualifikation, Alter, Erfahrung).</li>
+                <li>Erlaubt Probebeschäftigung & Nebenjob bis zu 20 Std./Woche.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: MUSTERSCHREIBEN & VORLAGEN */}
+      {subTab === 'vorlagen' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Vorlage 1: Fiktionsbescheinigung */}
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-mono font-bold text-amber-400 uppercase">
+                    1. Antrag Fiktionsbescheinigung (§ 81 IV AufenthG)
+                  </h4>
+                  <span className="text-[10px] font-mono text-zinc-400">Arbeitgeber-Vorlage</span>
+                </div>
+                <p className="text-xs text-zinc-400 font-sans mt-1">
+                  Muster zur unverzüglichen Ausstellung der Bescheinigung zur Vorlage beim Arbeitgeber bei Verzögerungen der Behörde.
+                </p>
+                <div className="mt-3 p-3 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-[11px] text-zinc-300 max-h-36 overflow-y-auto whitespace-pre-wrap">
+{`Absender: [Vorname Nachname], [Anschrift]
+An: Ausländerbehörde [Stadt / Landkreis], [Adresse]
+Datum: ${new Date().toLocaleDateString('de-DE')}
+
+Aktenzeichen / Ausländerzentralregister-Nr.: [AZ oder Geburtsdatum]
+Betreff: Dringender Antrag auf Ausstellung einer Fiktionsbescheinigung gem. § 81 Abs. 4 AufenthG
+
+Sehr geehrte Damen und Herren,
+
+hiermit nehme ich Bezug auf meinen rechtzeitig am [Datum des Verlängerungsantrags] vor Ablauf meines bisherigen Aufenthaltstitels (Ablaufdatum: [Datum]) gestellten Verlängerungsantrag.
+
+Gemäß § 81 Abs. 4 AufenthG gilt mein bisheriger Aufenthaltstitel inklusive aller Nebenbestimmungen und der Erlaubnis zur Ausübung der Erwerbstätigkeit kraft Gesetzes bis zu Ihrer Entscheidung fort.
+
+Da mein Arbeitgeber für den Fortbestand meines Beschäftigungsverhältnisses zwingend einen amtlichen Nachweis verlangt, beantrage ich hiermit die unverzügliche Ausstellung und Übersendung einer Fiktionsbescheinigung nach § 81 Abs. 4 AufenthG.
+
+Mit freundlichen Grüßen,
+[Unterschrift / Name]`}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => handleCopyText(`Absender: [Vorname Nachname], [Anschrift]\nAn: Ausländerbehörde [Stadt / Landkreis]\nDatum: ${new Date().toLocaleDateString('de-DE')}\n\nBetreff: Dringender Antrag auf Ausstellung einer Fiktionsbescheinigung gem. § 81 Abs. 4 AufenthG\n\nSehr geehrte Damen und Herren,\n\nhiermit nehme ich Bezug auf meinen rechtzeitig vor Ablauf meines bisherigen Aufenthaltstitels gestellten Verlängerungsantrag.\n\nGemäß § 81 Abs. 4 AufenthG gilt mein bisheriger Aufenthaltstitel inklusive aller Nebenbestimmungen und der Erlaubnis zur Ausübung der Erwerbstätigkeit kraft Gesetzes bis zu Ihrer Entscheidung fort.\n\nDa mein Arbeitgeber für den Fortbestand meines Beschäftigungsverhältnisses zwingend einen amtlichen Nachweis verlangt, beantrage ich hiermit die unverzügliche Ausstellung und Übersendung einer Fiktionsbescheinigung nach § 81 Abs. 4 AufenthG.\n\nMit freundlichen Grüßen,\n[Name]`, 'fiktion')}
+                  className="flex-grow py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {copiedTemplate === 'fiktion' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedTemplate === 'fiktion' ? 'Kopiert!' : 'Kopieren'}</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadDraft(`Absender: [Vorname Nachname], [Anschrift]\nAn: Ausländerbehörde [Stadt / Landkreis]\nDatum: ${new Date().toLocaleDateString('de-DE')}\n\nBetreff: Dringender Antrag auf Ausstellung einer Fiktionsbescheinigung gem. § 81 Abs. 4 AufenthG\n\nSehr geehrte Damen und Herren,\n\nhiermit nehme ich Bezug auf meinen rechtzeitig vor Ablauf meines bisherigen Aufenthaltstitels gestellten Verlängerungsantrag.\n\nGemäß § 81 Abs. 4 AufenthG gilt mein bisheriger Aufenthaltstitel inklusive aller Nebenbestimmungen und der Erlaubnis zur Ausübung der Erwerbstätigkeit kraft Gesetzes bis zu Ihrer Entscheidung fort.\n\nDa mein Arbeitgeber für den Fortbestand meines Beschäftigungsverhältnisses zwingend einen amtlichen Nachweis verlangt, beantrage ich hiermit die unverzügliche Ausstellung und Übersendung einer Fiktionsbescheinigung nach § 81 Abs. 4 AufenthG.\n\nMit freundlichen Grüßen,\n[Name]`, 'Antrag_Fiktionsbescheinigung_81_AufenthG.txt')}
+                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 rounded-lg transition-all cursor-pointer"
+                  title="Als Textdatei herunterladen"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Vorlage 2: Sachstandsanfrage & Untätigkeitsklage */}
+            <div className="p-5 rounded-xl bg-black border border-zinc-800 flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-mono font-bold text-amber-400 uppercase">
+                    2. Sachstandsanfrage mit Fristsetzung (§ 75 VwGO)
+                  </h4>
+                  <span className="text-[10px] font-mono text-zinc-400">Vor Klageerhebung</span>
+                </div>
+                <p className="text-xs text-zinc-400 font-sans mt-1">
+                  Förmliche Mahnung mit Fristsetzung von 14 Tagen und ausdrücklicher Klageandrohung beim Verwaltungsgericht.
+                </p>
+                <div className="mt-3 p-3 rounded-lg bg-zinc-900 border border-zinc-800 font-mono text-[11px] text-zinc-300 max-h-36 overflow-y-auto whitespace-pre-wrap">
+{`Absender: [Vorname Nachname], [Anschrift]
+An: Ausländerbehörde / Einbürgerungsbehörde [Stadt], [Adresse]
+Datum: ${new Date().toLocaleDateString('de-DE')}
+
+Aktenzeichen: [Ihr Aktenzeichen]
+Betreff: Dringende Sachstandsanfrage mit Fristsetzung und Androhung der Untätigkeitsklage gem. § 75 VwGO
+
+Sehr geehrte Damen und Herren,
+
+am [Datum der Antragstellung] habe ich bei Ihrer Behörde den vollständigen Antrag auf [Einbürgerung / Niederlassungserlaubnis / Aufenthaltserlaubnis] eingereicht.
+
+Seit der Einreichung sind mehr als 3 Monate vergangen, ohne dass eine sachliche Entscheidung ergangen ist. Ein zureichender sachlicher Grund im Sinne von § 75 Satz 1 VwGO liegt nicht vor.
+
+Ich setze Ihnen hiermit eine letzte Frist zur Entscheidung über meinen Antrag bis zum
+
+[Datum in 14 Tagen]
+
+Sollte bis zu diesem Zeitpunkt keine Bescheidung vorliegen, werde ich ohne weitere Vorankündigung durch meine Prozessbevollmächtigten Untätigkeitsklage beim zuständigen Verwaltungsgericht erheben. Die Kosten des Verfahrens fallen Ihnen zur Last.
+
+Mit freundlichen Grüßen,
+[Unterschrift]`}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => handleCopyText(`Absender: [Vorname Nachname], [Anschrift]\nAn: Ausländerbehörde / Einbürgerungsbehörde [Stadt]\nDatum: ${new Date().toLocaleDateString('de-DE')}\n\nBetreff: Dringende Sachstandsanfrage mit Fristsetzung und Androhung der Untätigkeitsklage gem. § 75 VwGO\n\nSehr geehrte Damen und Herren,\n\nam [Datum] habe ich bei Ihrer Behörde den vollständigen Antrag auf [Einbürgerung / Niederlassungserlaubnis] eingereicht.\n\nSeit der Einreichung sind mehr als 3 Monate vergangen, ohne dass eine sachliche Entscheidung ergangen ist. Ein zureichender sachlicher Grund im Sinne von § 75 Satz 1 VwGO liegt nicht vor.\n\nIch setze Ihnen hiermit eine letzte Frist zur Entscheidung über meinen Antrag bis zum [Datum in 14 Tagen].\n\nSollte bis zu diesem Zeitpunkt keine Bescheidung vorliegen, werde ich ohne weitere Vorankündigung Untätigkeitsklage beim zuständigen Verwaltungsgericht erheben.\n\nMit freundlichen Grüßen,\n[Name]`, 'untaetigkeit')}
+                  className="flex-grow py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-mono text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {copiedTemplate === 'untaetigkeit' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedTemplate === 'untaetigkeit' ? 'Kopiert!' : 'Kopieren'}</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadDraft(`Absender: [Vorname Nachname], [Anschrift]\nAn: Ausländerbehörde / Einbürgerungsbehörde [Stadt]\nDatum: ${new Date().toLocaleDateString('de-DE')}\n\nBetreff: Dringende Sachstandsanfrage mit Fristsetzung und Androhung der Untätigkeitsklage gem. § 75 VwGO\n\nSehr geehrte Damen und Herren,\n\nam [Datum] habe ich bei Ihrer Behörde den vollständigen Antrag auf [Einbürgerung / Niederlassungserlaubnis] eingereicht.\n\nSeit der Einreichung sind mehr als 3 Monate vergangen, ohne dass eine sachliche Entscheidung ergangen ist. Ein zureichender sachlicher Grund im Sinne von § 75 Satz 1 VwGO liegt nicht vor.\n\nIch setze Ihnen hiermit eine letzte Frist zur Entscheidung über meinen Antrag bis zum [Datum in 14 Tagen].\n\nSollte bis zu diesem Zeitpunkt keine Bescheidung vorliegen, werde ich ohne weitere Vorankündigung Untätigkeitsklage beim zuständigen Verwaltungsgericht erheben.\n\nMit freundlichen Grüßen,\n[Name]`, 'Sachstandsanfrage_Untaetigkeitsklage_75_VwGO.txt')}
+                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 rounded-lg transition-all cursor-pointer"
+                  title="Als Textdatei herunterladen"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

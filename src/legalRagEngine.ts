@@ -242,6 +242,129 @@ export const VERIFIED_GERMAN_LAWS_DB: VerifiedLawNorm[] = [
     ],
     legalConsequence: "Hemmung der Rechtskraft; Pflicht der Bußgeldstelle zur Aktenüberprüfung und ggf. Weiterleitung an das Amtsgericht.",
     keywords: ["bußgeldbescheid", "einspruch", "2 wochen", "blitzer", "fahrverbot", "punkte flensburg"]
+  },
+  {
+    code: "§ 10 StAG",
+    book: "StAG",
+    title: "Einbürgerungsanspruch nach neuem Staatsangehörigkeitsrecht",
+    officialUrl: "https://www.gesetze-im-internet.de/stag/__10.html",
+    exactWording: "Ein Ausländer, der seit fünf Jahren rechtmäßig seinen gewöhnlichen Aufenthalt im Inland hat und handlungsfähig nach Maßgabe des § 34 Satz 1 oder gesetzlich vertreten ist, ist auf Antrag einzubürgern, wenn er sich zur freiheitlichen demokratischen Grundordnung bekennt, ein unbefristetes oder qualifiziertes Aufenthaltsrecht besitzt, den Lebensunterhalt für sich und seine Angehörigen ohne Inanspruchnahme von Bürgergeld bestreitet, über ausreichende Kenntnisse der deutschen Sprache (B1) und Grundkenntnisse der Rechts- und Gesellschaftsordnung verfügt und keine Verurteilung wegen einer rechtswidrigen Tat vorliegt. Die Frist verkürzt sich bei besonderen Integrationsleistungen auf bis zu drei Jahre. Mehrstaatigkeit (Doppelpass) ist uneingeschränkt zulässig.",
+    elements: [
+      "Rechtmäßiger gewöhnlicher Voraufenthalt von 5 Jahren (bzw. 3 Jahre bei besonderen Integrationsleistungen / C1-Sprachzertifikat)",
+      "Bekenntnis zur freiheitlichen demokratischen Grundordnung & Antisemitismus-Ausschluss",
+      "Sicherung des Lebensunterhalts ohne Bürgergeld / Grundsicherung nach SGB II / SGB XII",
+      "Nachweis deutscher Sprachkenntnisse auf Niveau B1 GER",
+      "Erfolgreich absolvierter Einbürgerungstest / Leben in Deutschland Test",
+      "Straffreiheit (ausgenommen Bagatellstrafen bis 90 Tagessätze)",
+      "Aufgabe der bisherigen Staatsangehörigkeit ist seit der Reform NICHT mehr erforderlich (Doppelte Staatsbürgerschaft erlaubt)"
+    ],
+    legalConsequence: "Rechtsanspruch auf Verleihung der deutschen Staatsangehörigkeit und Ausstellung der Einbürgerungsurkunde.",
+    keywords: ["einbürgerung", "staatsangehörigkeit", "deutscher pass", "doppelpass", "stag", "5 jahre", "3 jahre", "b1 zertifikat", "einbürgerungstest", "bürgergeld", "bürgeramt", "staatsbürgerschaft"]
+  },
+  {
+    code: "§ 81 Abs. 4 AufenthG",
+    book: "AufenthG",
+    title: "Fiktionswirkung bei rechtzeitigem Verlängerungsantrag",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__81.html",
+    exactWording: "Beantragt ein Ausländer, der sich rechtmäßig im Bundesgebiet aufhält, ohne einen Aufenthaltstitel zu besitzen, die Erteilung eines Aufenthaltstitels, gilt sein Aufenthalt bis zur Entscheidung der Ausländerbehörde als erlaubt. Beantragt ein Ausländer die Verlängerung seines Aufenthaltstitels oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.",
+    elements: [
+      "Rechtzeitige Stellung des Antrags auf Verlängerung VOR Ablauf des bisherigen Aufenthaltstitels",
+      "Nachweis über die Einreichung (z.B. Eingangsbestätigung, Einschreiben, Online-Portal-Bestätigung)",
+      "Gesetzliche Fortgeltungswirkung (Fiktionswirkung) kraft Gesetzes ohne behördlichen Ermessensspielraum"
+    ],
+    legalConsequence: "Der bisherige Aufenthaltstitel und alle Nebenbestimmungen (inkl. Arbeitserlaubnis und Erwerbstätigkeit) gelten nahtlos fort; Anspruch auf Ausstellung einer Fiktionsbescheinigung.",
+    keywords: ["fiktionsbescheinigung", "fiktionswirkung", "aufenthaltstitel abgelaufen", "verlängerung aufenthalt", "ausländerbehörde", "termin", "arbeitserlaubnis fortbestehen", "81 aufenthg"]
+  },
+  {
+    code: "§ 75 VwGO",
+    book: "VwGO",
+    title: "Untätigkeitsklage gegen die Ausländerbehörde",
+    officialUrl: "https://www.gesetze-im-internet.de/vwgo/__75.html",
+    exactWording: "Ist über einen Widerspruch oder über einen Antrag auf Vornahme eines Verwaltungsakts ohne zureichenden Grund in angemessener Frist sachlich nicht entschieden worden, so ist die Klage abweichend von § 68 zulässig. Die Klage kann nicht vor Ablauf von drei Monaten seit dem Antrag auf Vornahme des Verwaltungsakts erhoben werden, es sei denn, dass wegen besonderer Umstände des Falles eine kürzere Frist geboten ist.",
+    elements: [
+      "Förmlicher Antrag bei der Ausländerbehörde gestellt (z.B. Einbürgerung, Niederlassungserlaubnis, Aufenthaltserlaubnis)",
+      "Ablauf von mindestens 3 Monaten ohne behördliche Sachentscheidung",
+      "Fehlen eines zureichenden sachlichen Grundes (reine Personalnot der Behörde ist nach ständiger BVerwG-Rechtsprechung kein zureichender Grund)",
+      "Vorherige Fristsetzung / Sachstandsanfrage zur Klageandrohung empfohlen"
+    ],
+    legalConsequence: "Zulässigkeit der Klage vor dem Verwaltungsgericht; das Gericht verpflichtet die Behörde zur Bescheidung oder entscheidet selbst; Kosten trägt in der Regel die Behörde.",
+    keywords: ["untätigkeitsklage", "ausländerbehörde antwortet nicht", "keine reaktion", "3 monate", "verwaltungsgericht", "sachstandsanfrage", "75 vwgo", "ausländeramt", "verzögerung"]
+  },
+  {
+    code: "§ 18g AufenthG",
+    book: "AufenthG",
+    title: "Blaue Karte EU (EU Blue Card) für akademische Fachkräfte",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html",
+    exactWording: "Einem Ausländer ist eine Blaue Karte EU zu erteilen, wenn er einen deutschen, einen anerkannten ausländischen oder einen einem deutschen Hochschulabschluss vergleichbaren ausländischen Hochschulabschluss besitzt und eine seiner Qualifikation angemessene Beschäftigung ausübt, für die er ein Gehalt in Höhe von mindestens 50 Prozent (Regelberufe) bzw. 45,3 Prozent (Engpassberufe) der jährlichen Beitragsbemessungsgrenze in der allgemeinen Rentenversicherung erhält.",
+    elements: [
+      "Anerkannter Hochschulabschluss oder anerkannte tertiäre Ausbildung (oder IT-Spezialisten mit 3 Jahren Berufserfahrung)",
+      "Konkretes Arbeitsplatzangebot oder Arbeitsvertrag in Deutschland",
+      "Erreichen der gesetzlichen Mindestgehaltsgrenze der Bundesagentur für Arbeit",
+      "Erleichterter Familiennachzug ohne Sprachnachweis für Ehegatten (§ 30 Abs. 1 Satz 3 Nr. 5 AufenthG)"
+    ],
+    legalConsequence: "Erteilung der Blauen Karte EU für bis zu 4 Jahre; Anspruch auf Niederlassungserlaubnis bereits nach 21 Monaten (mit Deutsch B1) oder 27 Monaten (mit Deutsch A1).",
+    keywords: ["blaue karte", "blue card", "eu blue card", "fachkraft", "mindestgehalt", "akademiker", "niederlassungserlaubnis 21 monate", "18g aufenthg"]
+  },
+  {
+    code: "§ 9 AufenthG",
+    book: "AufenthG",
+    title: "Niederlassungserlaubnis (Unbefristeter Aufenthaltstitel)",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__9.html",
+    exactWording: "Die Niederlassungserlaubnis ist ein unbefristeter Aufenthaltstitel. Sie berechtigt zur Ausübung einer Erwerbstätigkeit und ist zeitlich und räumlich unbeschränkt. Einem Ausländer ist die Niederlassungserlaubnis zu erteilen, wenn er seit fünf Jahren (bzw. 3 Jahre für Fachkräfte nach § 18c oder 21/27 Monate für Blaue Karte) den Aufenthaltstitel besitzt, sein Lebensunterhalt gesichert ist, er mindestens 60 Monate Pflichtbeiträge zur Rentenversicherung geleistet hat und über ausreichende Kenntnisse der deutschen Sprache (B1) verfügt.",
+    elements: [
+      "Besitz eines Aufenthaltstitels seit mindestens 5 Jahren (bzw. 3 Jahre für Fachkräfte § 18c AufenthG)",
+      "Eigenständige Sicherung des Lebensunterhalts",
+      "Nachweis von 60 Monaten Rentenversicherungsbeiträgen (bei Fachkräften 36 Monate, bei Blauer Karte 21/27 Monate)",
+      "Deutschkenntnisse auf Niveau B1 GER und Grundkenntnisse der Rechts- und Gesellschaftsordnung",
+      "Ausreichender Wohnraum für die gesamte Familie"
+    ],
+    legalConsequence: "Erteilung eines unbefristeten, dauerhaften Aufenthaltsrechts in Deutschland ohne Zweckbindung.",
+    keywords: ["niederlassungserlaubnis", "unbefristeter aufenthalt", "daueraufenthalt", "rentenbeiträge", "60 monate", "36 monate", "aufenthaltsrecht unbefristet"]
+  },
+  {
+    code: "§ 20a AufenthG",
+    book: "AufenthG",
+    title: "Chancenkarte zur Arbeitsplatzsuche (Punktesystem)",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html",
+    exactWording: "Einem Ausländer kann eine Chancenkarte zur Suche nach einer Erwerbstätigkeit erteilt werden, wenn er Fachkraft ist oder im Punktesystem mindestens sechs Punkte erreicht und sein Lebensunterhalt für die Dauer des Aufenthalts gesichert ist.",
+    elements: [
+      "Nachweis einer mindestens zweijährigen ausländischen Berufsqualifikation oder Hochschulabschluss",
+      "Deutschkenntnisse (mindestens A1) oder Englischkenntnisse (mindestens B2)",
+      "Erreichen von mindestens 6 Punkten nach dem Kriterienkatalog (Qualifikation, Berufserfahrung, Sprachkenntnisse, Alter, Voraufenthalt)",
+      "Finanzielle Lebensunterhaltssicherung (Sperrkonto / Verpflichtungserklärung)"
+    ],
+    legalConsequence: "Aufenthaltstitel zur Arbeitsplatzsuche für bis zu 1 Jahr inkl. Nebenbeschäftigung bis zu 20 Wochenstunden und Probebeschäftigung.",
+    keywords: ["chancenkarte", "punktesystem", "arbeitsplatzsuche", "visum arbeit", "qualifikation", "sperrkonto", "20a aufenthg"]
+  },
+  {
+    code: "§ 28 AufenthG",
+    book: "AufenthG",
+    title: "Familiennachzug zu deutschen Staatsangehörigen",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__28.html",
+    exactWording: "Die Aufenthaltserlaubnis ist dem ausländischen Ehegatten eines Deutschen, dem minderjährigen ledigen Kind eines Deutschen oder dem ausländischen Elternteil eines minderjährigen ledigen Deutschen zur Ausübung der Personensorge zu erteilen, wenn der Deutsche seinen gewöhnlichen Aufenthalt im Bundesgebiet hat. Sie ist in der Regel abweichend von § 5 Abs. 1 Nr. 1 (Lebensunterhaltssicherung) zu erteilen.",
+    elements: [
+      "Ehegatte, minderjähriges Kind oder personensorgeberechtigter Elternteil eines deutschen Staatsangehörigen",
+      "Gewöhnlicher Aufenthalt des deutschen Familienangehörigen im Bundesgebiet",
+      "Grundkenntnisse der deutschen Sprache (A1) des Ehegatten (mit gesetzlichen Ausnahmen)",
+      "Besonderer Schutz von Ehe und Familie nach Art. 6 GG"
+    ],
+    legalConsequence: "Rechtsanspruch auf Erteilung einer Aufenthaltserlaubnis mit voller Arbeitserlaubnis; Anspruch auf Niederlassungserlaubnis bereits nach 3 Jahren (§ 28 Abs. 2 AufenthG).",
+    keywords: ["familiennachzug", "ehegattennachzug", "kindernachzug", "heirat mit deutschem", "visum familie", "art 6 gg", "28 aufenthg"]
+  },
+  {
+    code: "§ 104c AufenthG",
+    book: "AufenthG",
+    title: "Chancen-Aufenthaltsrecht für langjährig Geduldete",
+    officialUrl: "https://www.gesetze-im-internet.de/aufenthg_2004/__104c.html",
+    exactWording: "Einem geduldeten Ausländer soll eine Aufenthaltserlaubnis für 18 Monate erteilt werden, wenn er sich am 31. Oktober 2022 seit fünf Jahren ununterbrochen geduldet, gestattet oder mit einer Aufenthaltserlaubnis im Bundesgebiet aufgehalten hat, sich zur freiheitlichen demokratischen Grundordnung bekennt und nicht wegen einer im Bundesgebiet begangenen vorsätzlichen Straftat verurteilt wurde.",
+    elements: [
+      "Ununterbrochener Voraufenthalt von 5 Jahren zum Stichtag (geduldet, gestattet oder mit Aufenthaltstitel)",
+      "Bekenntnis zur freiheitlichen demokratischen Grundordnung",
+      "Keine Verurteilung wegen vorsätzlicher Straftaten",
+      "18-monatige Gültigkeitsdauer zur Erfüllung der Voraussetzungen für ein dauerhaftes Bleiberecht (§§ 25a, 25b AufenthG)"
+    ],
+    legalConsequence: "Einmalige Erteilung einer Aufenthaltserlaubnis für 18 Monate zur Identitätsklärung, Spracherwerb und Arbeitsaufnahme.",
+    keywords: ["chancenaufenthaltsrecht", "chancen aufenthalt", "duldung", "bleiberecht", "104c aufenthg", "geduldet", "ausländerrecht"]
   }
 ];
 
