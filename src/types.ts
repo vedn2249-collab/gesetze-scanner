@@ -1,5 +1,7 @@
 export type ActiveTab = 
   | "verfahrens_schutz" 
+  | "rechtssicherheit"
+  | "auslaenderrecht"
   | "mock_trial"
   | "kosten_finanzen"
   | "fristen_kalender"
@@ -307,3 +309,59 @@ export interface LawAlert {
   recommendedAction: string;
   affectedParagraphs: string[];
 }
+
+export interface TatbestandsmerkmalCheck {
+  element: string;
+  status: "erfuellt" | "nicht_erfuellt" | "fraglich_pruefungsbeduerftig";
+  explanation: string;
+}
+
+export interface GroundedNormAssessment {
+  code: string;
+  book: string;
+  title: string;
+  officialUrl: string;
+  exactWording: string;
+  elementsChecks: TatbestandsmerkmalCheck[];
+  overallElementMatch: "VOLLSTÄNDIG" | "TEILWEISE" | "NICHT_ERFÜLLT";
+  legalConsequenceApplied: string;
+  officialCitation: string;
+}
+
+export interface RagLegalCertaintyResult {
+  scenarioClassification: {
+    primaryField: string;
+    subCategory: string;
+    riskScore: number; // 0-100
+    urgencyLevel: "HOCH" | "MITTEL" | "NORMAL";
+  };
+  summary: string;
+  retrievedNorms: GroundedNormAssessment[];
+  subsumptionConclusion: string;
+  actionableRecommendations: string[];
+  officialSources: { title: string; url: string; code: string }[];
+}
+
+export interface DomainNotificationSetting {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  relevantNorms: string;
+  email: boolean;
+  push: boolean;
+  sound: boolean;
+  frequency: "instant" | "daily" | "weekly";
+}
+
+export interface NotificationMatrixPreferences {
+  emailAddress: string;
+  globalPushEnabled: boolean;
+  globalSoundEnabled: boolean;
+  globalEmailEnabled: boolean;
+  minSeverity: "ALL" | "HIGH_AND_CRITICAL" | "CRITICAL_ONLY";
+  defaultFrequency: "instant" | "daily" | "weekly";
+  domains: Record<string, DomainNotificationSetting>;
+  lastSaved?: string;
+}
+

@@ -61,7 +61,17 @@ import {
   LawyerSearchView,
   ImmigrationLawView 
 } from "./components/SpecializedLegalTabs";
-import { Car, Globe } from "lucide-react";
+import { RechtssicherheitView } from "./components/RechtssicherheitView";
+import { NotificationSettingsModal } from "./components/NotificationSettingsModal";
+import { DeadlineCalculatorModal } from "./components/DeadlineCalculatorModal";
+import { PWAInstallBanner } from "./components/PWAInstallBanner";
+import { 
+  sendLawRadarPushAlert, 
+  playCriticalWarningChime, 
+  requestNotificationPermission, 
+  getNotificationPermission 
+} from "./lib/notificationService";
+import { Car, Globe, Mail } from "lucide-react";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
@@ -921,6 +931,8 @@ export default function App() {
   const [showDatenschutzModal, setShowDatenschutzModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showRefundsModal, setShowRefundsModal] = useState(false);
+  const [showNotificationSettingsModal, setShowNotificationSettingsModal] = useState(false);
+  const [showDeadlineCalculatorModal, setShowDeadlineCalculatorModal] = useState(false);
 
   // 24/7 Law Radar & Eil-Warnungen State
   const [lawAlerts, setLawAlerts] = useState<LawAlert[]>([
@@ -968,6 +980,90 @@ export default function App() {
   const [enableSoundAlerts, setEnableSoundAlerts] = useState(true);
   const [radarCheckSuccessMessage, setRadarCheckSuccessMessage] = useState<string | null>(null);
   const [dismissedEmergencyBanner, setDismissedEmergencyBanner] = useState(false);
+  const [notificationPermissionState, setNotificationPermissionState] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
+  
+  // Track seen critical alerts to prevent repeated notification popups
+  const seenCriticalAlertIdsRef = useRef<Set<string>>(new Set(["alert-2026-001"]));
+
+  const handleRequestPushPermission = async () => {
+    const granted = await requestNotificationPermission();
+    setNotificationPermissionState(granted ? "granted" : getNotificationPermission());
+    if (granted) {
+      setEnablePushAlerts(true);
+      sendLawRadarPushAlert({
+        id: `welcome-${Date.now()}`,
+        timestamp: "Jetzt",
+        category: "System",
+        lawCode: "§ 24/7 Radar",
+        severity: "CRITICAL",
+        title: "Echtzeit-Push-Warnungen erfolgreich aktiviert",
+        summary: "Sie erhalten ab sofort Live-Eilwarnungen bei kritischen Gesetzesänderungen und BGH-Urteilen direkt auf Ihren Bildschirm.",
+        impactOnSubscribers: "Sofortige Alarmierung bei rechtlichen Eilfristen.",
+        recommendedAction: "Keine Aktion erforderlich.",
+        affectedParagraphs: ["BGB", "StPO", "StGB", "AufenthG"]
+      }, { playSound: enableSoundAlerts });
+      setRadarCheckSuccessMessage("🔔 Browser-Push-Benachrichtigungen wurden erfolgreich freigeschaltet!");
+    } else {
+      setRadarCheckSuccessMessage("⚠️ Push-Benachrichtigungen wurden vom Browser abgelehnt oder blockiert.");
+    }
+  };
+
+  const handleTriggerTestCriticalPush = () => {
+    const testAlert: LawAlert = {
+      id: `test-${Date.now()}`,
+      timestamp: "Soeben (" + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr)",
+      category: "Straf- & Mietrecht",
+      lawCode: "§ 136 StPO / § 573 BGB",
+      severity: "CRITICAL",
+      title: "Test-Eilwarnung: BGH verschärft Formvorschriften & Beweisverwertungsverbot",
+      summary: "Der BGH hat in einem Eilbeschluss die Dokumentationspflichten verschärft. Fehlende Belehrungen führen zur Unverwertbarkeit von Beschuldigtenaussagen.",
+      impactOnSubscribers: "Unmittelbare Relevanz für alle laufenden Ermittlungs- und Kündigungsverfahren.",
+      recommendedAction: "Sofortige Akteneinsicht nach § 147 StPO beantragen und Verwertungsrüge protokollieren.",
+      affectedParagraphs: ["§ 136 StPO", "§ 105 StPO", "§ 573 BGB"]
+    };
+
+    // Dispatch Push & Sound
+    if (enablePushAlerts) {
+      sendLawRadarPushAlert(testAlert, { playSound: enableSoundAlerts });
+    } else if (enableSoundAlerts) {
+      playCriticalWarningChime();
+    }
+    
+    // Add to alerts state at the top
+    setLawAlerts(prev => [testAlert, ...prev]);
+    setRadarCheckSuccessMessage("🚨 Test-Eilwarnung (Push & akustischer Warnton) erfolgreich ausgelöst!");
+  };
+
+  // Monitor incoming alerts for real-time critical events
+  useEffect(() => {
+    const criticalAlerts = lawAlerts.filter(a => a.severity === "CRITICAL");
+    criticalAlerts.forEach(alert => {
+      if (!seenCriticalAlertIdsRef.current.has(alert.id)) {
+        seenCriticalAlertIdsRef.current.add(alert.id);
+        if (enablePushAlerts) {
+          sendLawRadarPushAlert(alert, { playSound: enableSoundAlerts });
+        } else if (enableSoundAlerts) {
+          playCriticalWarningChime();
+        }
+      }
+    });
+  }, [lawAlerts, enablePushAlerts, enableSoundAlerts]);
+
+  // Periodic real-time background polling every 45 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("/api/law-radar")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.alerts && Array.isArray(data.alerts)) {
+            setLawAlerts(data.alerts);
+            setRadarLastCheckTime("Live geprüft (" + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr)");
+          }
+        })
+        .catch(() => {});
+    }, 45000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch initial law radar state from backend
   useEffect(() => {
@@ -1666,9 +1762,12 @@ export default function App() {
       <StarryBackground />
 
       <div className="relative z-10">
+      {/* PWA Install Banner */}
+      <PWAInstallBanner />
+
       {/* Top User Auth & Account Bar */}
       <div className="bg-zinc-950 border-b border-zinc-800/80 py-2.5 px-4 text-xs">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           {currentUser ? (
             <div className="flex flex-wrap items-center gap-2 text-zinc-300">
               <span className="font-bold text-amber-400 flex items-center gap-1.5">
@@ -1700,6 +1799,26 @@ export default function App() {
           )}
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDeadlineCalculatorModal(true)}
+              className="text-[11px] font-mono text-amber-300 hover:text-white px-2.5 py-1 bg-amber-950/40 border border-amber-500/40 hover:border-amber-400 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+              title="Interaktiver Fristenrechner (§§ 187, 193 BGB / Feiertagsautomatik)"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>§ 193 BGB Fristenrechner</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowNotificationSettingsModal(true)}
+              className="text-[11px] font-mono text-zinc-300 hover:text-amber-300 px-2.5 py-1 bg-zinc-900 border border-zinc-800 hover:border-amber-400/40 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+              title="Benachrichtigungs-Matrix & Eilwarnungen konfigurieren"
+            >
+              <Sliders className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Eilwarnungen & Kanäle</span>
+            </button>
+
             {currentUser ? (
               <button
                 type="button"
@@ -1727,7 +1846,7 @@ export default function App() {
       <header id="app_header" className="border-b border-zinc-800 bg-gradient-to-b from-zinc-950 to-black py-6 px-3 text-center">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
           
-          {/* LINKER FLÜGEL: TABS 1 BIS 5 UNTEREINANDER */}
+          {/* LINKER FLÜGEL: TABS 1 BIS 6 UNTEREINANDER */}
           <div className="w-full lg:w-72 flex flex-col gap-1.5 shrink-0 text-left">
             <span className="text-[10px] font-mono font-extrabold text-amber-400 uppercase tracking-wider px-1">
               ⚡ Fach-Module (Flügel Links)
@@ -1797,6 +1916,20 @@ export default function App() {
                 <BookOpen className="w-3.5 h-3.5" />
                 <span className="truncate">5. Akten-Navigator</span>
               </button>
+
+              <button
+                type="button"
+                id="tab_button_rechtssicherheit_header"
+                onClick={() => setActiveTab("rechtssicherheit")}
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === "rechtssicherheit"
+                    ? "bg-teal-400 text-black shadow-md font-extrabold"
+                    : "text-teal-400 hover:text-teal-300 hover:bg-zinc-900"
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span className="truncate">6. Rechtssicherheit (RAG)</span>
+              </button>
             </div>
           </div>
 
@@ -1819,7 +1952,7 @@ export default function App() {
             </p>
           </div>
 
-          {/* RECHTER FLÜGEL: TABS 6 BIS 10 UNTEREINANDER */}
+          {/* RECHTER FLÜGEL: TABS 7 BIS 12 UNTEREINANDER */}
           <div className="w-full lg:w-72 flex flex-col gap-1.5 shrink-0 text-left">
             <span className="text-[10px] font-mono font-extrabold text-cyan-400 uppercase tracking-wider px-1">
               📡 Monitoring & Praxis (Flügel Rechts)
@@ -1835,7 +1968,7 @@ export default function App() {
                 }`}
               >
                 <Radio className="w-3.5 h-3.5" />
-                <span className="truncate">6. Rechtsprechungs-Radar</span>
+                <span className="truncate">7. Rechtsprechungs-Radar</span>
               </button>
 
               <button
@@ -1848,7 +1981,7 @@ export default function App() {
                 }`}
               >
                 <Volume2 className="w-3.5 h-3.5" />
-                <span className="truncate">7. Audio-Tool & Diktat</span>
+                <span className="truncate">8. Audio-Tool & Diktat</span>
               </button>
 
               <button
@@ -1861,7 +1994,7 @@ export default function App() {
                 }`}
               >
                 <Zap className="w-3.5 h-3.5" />
-                <span className="truncate">8. KI-Coach (Verhandlung)</span>
+                <span className="truncate">9. KI-Coach (Verhandlung)</span>
               </button>
 
               <button
@@ -1874,7 +2007,7 @@ export default function App() {
                 }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span className="truncate">9. Selbstvertreter-Guide</span>
+                <span className="truncate">10. Selbstvertreter-Guide</span>
               </button>
 
               <button
@@ -1887,7 +2020,7 @@ export default function App() {
                 }`}
               >
                 <Search className="w-3.5 h-3.5" />
-                <span className="truncate">10. Anwalts-Finder</span>
+                <span className="truncate">11. Anwalts-Finder</span>
               </button>
 
               <button
@@ -1900,7 +2033,7 @@ export default function App() {
                 }`}
               >
                 <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="truncate">11. Ausländerrecht & StAG</span>
+                <span className="truncate">12. Ausländerrecht & StAG</span>
               </button>
             </div>
           </div>
@@ -1968,7 +2101,7 @@ export default function App() {
             </button>
           </div>
 
-          <div id="tabs_container" className="grid grid-cols-2 md:grid-cols-4 p-1 rounded-xl bg-zinc-950 border border-zinc-800 shadow-silver-glow gap-1">
+          <div id="tabs_container" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 p-1 rounded-xl bg-zinc-950 border border-zinc-800 shadow-silver-glow gap-1">
             <button
               id="tab_button_verfahrens_schutz"
               onClick={() => setActiveTab("verfahrens_schutz")}
@@ -1980,6 +2113,19 @@ export default function App() {
             >
               <ShieldAlert className={`w-4 h-4 ${activeTab === "verfahrens_schutz" ? "text-amber-400" : "text-zinc-500"}`} />
               <span className="text-center sm:text-left">1. Verfahrens-Scan</span>
+            </button>
+
+            <button
+              id="tab_button_rechtssicherheit"
+              onClick={() => setActiveTab("rechtssicherheit")}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+                activeTab === "rechtssicherheit"
+                  ? "bg-gradient-to-b from-teal-950 to-zinc-900 text-teal-300 border border-teal-500/50 shadow-silver-glow"
+                  : "text-teal-400/70 hover:text-teal-300 hover:bg-zinc-900/30"
+              }`}
+            >
+              <ShieldCheck className={`w-4 h-4 ${activeTab === "rechtssicherheit" ? "text-teal-400" : "text-teal-500/60"}`} />
+              <span className="text-center sm:text-left font-bold text-teal-300">Rechtssicherheit (RAG)</span>
             </button>
             
             <button
@@ -1999,7 +2145,7 @@ export default function App() {
                 </span>
               </div>
               <span className="text-center sm:text-left flex items-center gap-1 font-semibold">
-                24/7 Gesetzes-Radar
+                24/7 Radar
               </span>
             </button>
 
@@ -2013,7 +2159,7 @@ export default function App() {
               }`}
             >
               <BookOpen className={`w-4 h-4 ${activeTab === "gesetzes_datenbank" ? "text-amber-400" : "text-zinc-500"}`} />
-              <span className="text-center sm:text-left">Gesetzes-Datenbank</span>
+              <span className="text-center sm:text-left">Gesetzes-DB</span>
             </button>
 
             <button
@@ -2026,7 +2172,7 @@ export default function App() {
               }`}
             >
               <Scale className={`w-4 h-4 ${activeTab === "soforthilfe_info" ? "text-amber-400" : "text-zinc-500"}`} />
-              <span className="text-center sm:text-left">Soforthilfe-Info</span>
+              <span className="text-center sm:text-left">Soforthilfe</span>
             </button>
           </div>
         </div>
@@ -3063,6 +3209,28 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        {/* 6. RECHTSSICHERHEIT (RAG-SUBSUMTIONS-SCHNITTSTELLE) */}
+        <AnimatePresence mode="wait">
+          {activeTab === "rechtssicherheit" && (
+            <motion.div
+              key="rechtssicherheit_content"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <RechtssicherheitView 
+                isPremiumUnlocked={isPremiumUnlocked || paymentSuccess}
+                onTriggerSubscribe={() => handleTriggerPayment("allgemein_annual")}
+                onTransferToScanner={(text) => {
+                  setSituationText(text);
+                  setActiveTab("verfahrens_schutz");
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* TAB 2: 24/7 GESETZES-RADAR & UNWETTER-WARNSYSTEM */}
         <AnimatePresence mode="wait">
           {activeTab === "gesetzes_radar" && (
@@ -3097,16 +3265,50 @@ export default function App() {
                     <div className="text-[11px] font-mono text-zinc-400">
                       Letzte Prüfung: <span className="text-emerald-400 font-bold">{radarLastCheckTime}</span>
                     </div>
-                    <button
-                      onClick={() => triggerLiveLawCheck()}
-                      disabled={isCheckingRadar}
-                      className="w-full md:w-auto bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black px-4 py-2 rounded-xl font-display font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isCheckingRadar ? "animate-spin" : ""}`} />
-                      {isCheckingRadar ? "Prüfe Gesetzblätter..." : "Jetzt Manuelle Eil-Prüfung starten"}
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                      <button
+                        onClick={() => triggerLiveLawCheck()}
+                        disabled={isCheckingRadar}
+                        className="w-full md:w-auto bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black px-4 py-2 rounded-xl font-display font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isCheckingRadar ? "animate-spin" : ""}`} />
+                        {isCheckingRadar ? "Prüfe Gesetzblätter..." : "Jetzt Manuelle Eil-Prüfung"}
+                      </button>
+
+                      <button
+                        onClick={handleTriggerTestCriticalPush}
+                        type="button"
+                        className="w-full md:w-auto bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 px-3.5 py-2 rounded-xl font-mono font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                        title="Löst sofort eine Test-Push-Benachrichtigung und den Alarm-Warnton aus"
+                      >
+                        <Bell className="w-3.5 h-3.5 text-red-400" />
+                        <span>Test-Warnung (Push & Audio)</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Push Notification Browser Permission Prompt */}
+                {notificationPermissionState !== "granted" && (
+                  <div className="mt-4 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <Bell className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div>
+                        <span className="font-bold font-mono">Echtzeit-Push-Benachrichtigungen aktivieren:</span>
+                        <p className="text-[11px] text-zinc-300">
+                          Erhalten Sie Live-Popups auf Ihrem Desktop oder Smartphone, sobald ein KRITISCHES BGH-Urteil ergeht.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRequestPushPermission}
+                      className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold text-xs shrink-0 cursor-pointer shadow-sm"
+                    >
+                      Im Browser freischalten
+                    </button>
+                  </div>
+                )}
 
                 {/* Banner Status message */}
                 {radarCheckSuccessMessage && (
@@ -3118,23 +3320,132 @@ export default function App() {
               </div>
 
               {/* Preferences & Subscriptions panel */}
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Sliders className="w-5 h-5 text-amber-400" />
-                    <h3 className="font-display font-bold text-white text-sm">
-                      Abo-Filter: Überwachte Rechtsgebiete & Warnkanäle
-                    </h3>
+                    <div>
+                      <h3 className="font-display font-bold text-white text-sm">
+                        Abo-Filter & Benachrichtigungs-Zentrale
+                      </h3>
+                      <p className="text-[11px] text-zinc-400">
+                        Wählen Sie Kanäle (E-Mail, Push, Audio) und Fachgebiete granular per Checkbox.
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                    Echtzeit-Synchronisation
-                  </span>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowNotificationSettingsModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-mono font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-black" />
+                    <span>⚙️ Einstellungsmaske öffnen</span>
+                  </button>
+                </div>
+
+                {/* 1-Klick Schnellwahl-Presets per User Request */}
+                <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      Schnellwahl-Profile (Sofort-Aktivierung):
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500">1 Klick</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {/* Preset 1: Nur Mietrecht per E-Mail */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubscribedTopics(["Mietrecht"]);
+                        setEnablePushAlerts(false);
+                        setEnableSoundAlerts(false);
+                        try {
+                          const prefs = JSON.parse(localStorage.getItem("gs_notification_matrix_prefs") || "{}");
+                          prefs.globalEmailEnabled = true;
+                          if (prefs.domains) {
+                            Object.keys(prefs.domains).forEach(k => {
+                              prefs.domains[k].email = (k === "mietrecht");
+                              prefs.domains[k].push = false;
+                            });
+                          }
+                          localStorage.setItem("gs_notification_matrix_prefs", JSON.stringify(prefs));
+                        } catch (e) {}
+                        setRadarCheckSuccessMessage("✅ Profil aktiviert: „Nur Mietrecht per E-Mail“ – Alle anderen Kanäle für Mietrecht optimiert.");
+                        setTimeout(() => setRadarCheckSuccessMessage(null), 4000);
+                      }}
+                      className="p-2.5 rounded-xl bg-black hover:bg-zinc-900 border border-zinc-800 hover:border-amber-400/50 text-left transition-all cursor-pointer group flex items-start justify-between"
+                    >
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-amber-300 group-hover:text-amber-200 block">
+                          🏠 „Nur Mietrecht per E-Mail“
+                        </span>
+                        <span className="text-[10px] text-zinc-400 block">
+                          Eigenbedarf & Mietminderung nur per Postfach.
+                        </span>
+                      </div>
+                      <Mail className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    </button>
+
+                    {/* Preset 2: Alles per Push */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubscribedTopics(["Mietrecht", "Arbeitsrecht", "Strafrecht & StPO", "Verkehrsrecht", "KCanG Cannabis"]);
+                        setEnablePushAlerts(true);
+                        setEnableSoundAlerts(true);
+                        handleRequestPushPermission();
+                        try {
+                          const prefs = JSON.parse(localStorage.getItem("gs_notification_matrix_prefs") || "{}");
+                          prefs.globalPushEnabled = true;
+                          if (prefs.domains) {
+                            Object.keys(prefs.domains).forEach(k => {
+                              prefs.domains[k].push = true;
+                            });
+                          }
+                          localStorage.setItem("gs_notification_matrix_prefs", JSON.stringify(prefs));
+                        } catch (e) {}
+                        setRadarCheckSuccessMessage("✅ Profil aktiviert: „Alles per Push“ – Live-Popups für sämtliche Rechtsgebiete eingeschaltet.");
+                        setTimeout(() => setRadarCheckSuccessMessage(null), 4000);
+                      }}
+                      className="p-2.5 rounded-xl bg-black hover:bg-zinc-900 border border-zinc-800 hover:border-cyan-400/50 text-left transition-all cursor-pointer group flex items-start justify-between"
+                    >
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-cyan-300 group-hover:text-cyan-200 block">
+                          🔔 „Alles per Push“
+                        </span>
+                        <span className="text-[10px] text-zinc-400 block">
+                          Sofortige Bildschirm-Popups für alle Urteile.
+                        </span>
+                      </div>
+                      <Bell className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                    </button>
+
+                    {/* Preset 3: Matrix anpassen */}
+                    <button
+                      type="button"
+                      onClick={() => setShowNotificationSettingsModal(true)}
+                      className="p-2.5 rounded-xl bg-black hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-400/50 text-left transition-all cursor-pointer group flex items-start justify-between"
+                    >
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-bold text-emerald-300 group-hover:text-emerald-200 block">
+                          ⚙️ „Individuelle Matrix“
+                        </span>
+                        <span className="text-[10px] text-zinc-400 block">
+                          8 Rechtsgebiete x 3 Kanäle detailliert konfigurieren.
+                        </span>
+                      </div>
+                      <Sliders className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-mono text-zinc-400 mb-2 uppercase tracking-wider">
-                      Wähle Deine Rechtsgebiete für automatische Eil-Warnungen:
+                      Schnellauswahl überwachte Rechtsgebiete:
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {[
@@ -4532,6 +4843,36 @@ export default function App() {
         onClose={() => setShowAuthModal(false)}
         initialMode={authModalMode}
         titleNotice={authModalNotice}
+      />
+
+      {/* Granular Notification Settings Modal (E-Mail / Push / Audio Matrix) */}
+      <NotificationSettingsModal
+        isOpen={showNotificationSettingsModal}
+        onClose={() => setShowNotificationSettingsModal(false)}
+        userEmail={currentUser?.email || paymentEmail || ""}
+        onSavePreferences={(prefs) => {
+          // Sync with radar topics
+          const activeTopics: string[] = [];
+          if (prefs.domains.mietrecht?.email || prefs.domains.mietrecht?.push) activeTopics.push("Mietrecht");
+          if (prefs.domains.arbeitsrecht?.email || prefs.domains.arbeitsrecht?.push) activeTopics.push("Arbeitsrecht");
+          if (prefs.domains.strafrecht?.email || prefs.domains.strafrecht?.push) activeTopics.push("Strafrecht & StPO");
+          if (prefs.domains.verkehrsrecht?.email || prefs.domains.verkehrsrecht?.push) activeTopics.push("Verkehrsrecht");
+          if (prefs.domains.kcang?.email || prefs.domains.kcang?.push) activeTopics.push("KCanG Cannabis");
+          
+          if (activeTopics.length > 0) {
+            setSubscribedTopics(activeTopics);
+          }
+          setEnablePushAlerts(prefs.globalPushEnabled);
+          setEnableSoundAlerts(prefs.globalSoundEnabled);
+          setRadarCheckSuccessMessage("✅ Benachrichtigungs-Matrix erfolgreich gespeichert!");
+          setTimeout(() => setRadarCheckSuccessMessage(null), 4000);
+        }}
+      />
+
+      {/* § 193 BGB Interactive Deadline Calculator Modal */}
+      <DeadlineCalculatorModal
+        isOpen={showDeadlineCalculatorModal}
+        onClose={() => setShowDeadlineCalculatorModal(false)}
       />
       </div>
     </div>

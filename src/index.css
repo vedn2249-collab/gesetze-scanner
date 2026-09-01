@@ -72,3 +72,90 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(212, 175, 55, 0.5);
 }
+
+/* Print Styles for clean Behörden-PDFs and Legal Briefs */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  }
+
+  /* Hide navigation, buttons, footers, toolbars, radar tickers */
+  header,
+  footer,
+  nav,
+  button,
+  .no-print,
+  #header-nav,
+  #legal-radar-ticker,
+  .shadow-gold-glow,
+  .shadow-silver-glow,
+  .animate-pulse {
+    display: none !important;
+  }
+
+  /* Make background clean white and text crisp black */
+  .bg-black,
+  .bg-zinc-950,
+  .bg-zinc-900,
+  .bg-zinc-900\/60,
+  .bg-zinc-900\/80 {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
+  }
+
+  .text-white,
+  .text-zinc-100,
+  .text-zinc-200,
+  .text-zinc-300,
+  .text-gold {
+    color: #111827 !important;
+  }
+
+  .text-zinc-400,
+  .text-zinc-500 {
+    color: #4b5563 !important;
+  }
+
+  .text-amber-400,
+  .text-amber-300,
+  .text-teal-300,
+  .text-teal-400 {
+    color: #1e3a8a !important;
+    font-weight: bold !important;
+  }
+
+  .border,
+  .border-zinc-800,
+  .border-zinc-700,
+  .border-amber-500\/40 {
+    border-color: #9ca3af !important;
+  }
+
+  /* Ensure page breaks don't split paragraphs awkwardly */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    color: #000000 !important;
+  }
+
+  p, pre, blockquote {
+    page-break-inside: avoid;
+  }
+
+  /* Printable Schriftsatz Document */
+  #printable-schriftsatz,
+  #printable-rag-report {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
