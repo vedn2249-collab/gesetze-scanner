@@ -1,6 +1,6 @@
 {
   "name": "Gesetzes-Scanner",
-  "description": "Das technische Tool zur Dokumenten- und Textanalyse. Automatisierte Software-Lösung zur effizienten Textstrukturierung, Fristenberechnung und Formatierung von Dokumenten.",
+  "description": "Der intelligente Gesetze-Scanner: Automatisierte Analysen von Gesetzesänderungen, Echtzeit Push-Warnungen und rechtliche KI-Auswertungen für die Praxis.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

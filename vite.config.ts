@@ -11,7 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg'],
+        includeAssets: ['icon.svg', 'robots.txt', 'sitemap.xml'],
         manifest: {
           id: '/',
           name: 'Gesetzes-Scanner | Dokumenten- & Textanalyse',

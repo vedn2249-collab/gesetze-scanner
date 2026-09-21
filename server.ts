@@ -1919,6 +1919,15 @@ app.get("/robots.txt", (req, res) => {
   res.sendFile(robotsPath);
 });
 
+// Explicit sitemap.xml route ensuring immediate availability
+app.get("/sitemap.xml", (req, res) => {
+  const sitemapPath = process.env.NODE_ENV === "production"
+    ? path.join(process.cwd(), "dist", "sitemap.xml")
+    : path.join(process.cwd(), "public", "sitemap.xml");
+  res.type("application/xml");
+  res.sendFile(sitemapPath);
+});
+
 // Configure Vite or Static Files
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
