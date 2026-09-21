@@ -1910,6 +1910,15 @@ app.post("/api/create-checkout-session", async (req, res) => {
   });
 });
 
+// Explicit robots.txt route ensuring immediate availability
+app.get("/robots.txt", (req, res) => {
+  const robotsPath = process.env.NODE_ENV === "production"
+    ? path.join(process.cwd(), "dist", "robots.txt")
+    : path.join(process.cwd(), "public", "robots.txt");
+  res.type("text/plain");
+  res.sendFile(robotsPath);
+});
+
 // Configure Vite or Static Files
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
