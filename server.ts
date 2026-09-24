@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
@@ -1910,21 +1911,23 @@ app.post("/api/create-checkout-session", async (req, res) => {
   });
 });
 
-// Explicit robots.txt route ensuring immediate availability
+// Explicit robots.txt route ensuring immediate availability and proper headers
 app.get("/robots.txt", (req, res) => {
-  const robotsPath = process.env.NODE_ENV === "production"
-    ? path.join(process.cwd(), "dist", "robots.txt")
-    : path.join(process.cwd(), "public", "robots.txt");
-  res.type("text/plain");
+  const robotsPath = fs.existsSync(path.join(process.cwd(), "public", "robots.txt"))
+    ? path.join(process.cwd(), "public", "robots.txt")
+    : path.join(process.cwd(), "dist", "robots.txt");
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
   res.sendFile(robotsPath);
 });
 
-// Explicit sitemap.xml route ensuring immediate availability
+// Explicit sitemap.xml route ensuring immediate availability and proper headers
 app.get("/sitemap.xml", (req, res) => {
-  const sitemapPath = process.env.NODE_ENV === "production"
-    ? path.join(process.cwd(), "dist", "sitemap.xml")
-    : path.join(process.cwd(), "public", "sitemap.xml");
-  res.type("application/xml");
+  const sitemapPath = fs.existsSync(path.join(process.cwd(), "public", "sitemap.xml"))
+    ? path.join(process.cwd(), "public", "sitemap.xml")
+    : path.join(process.cwd(), "dist", "sitemap.xml");
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
   res.sendFile(sitemapPath);
 });
 
