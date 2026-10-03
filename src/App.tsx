@@ -78,6 +78,8 @@ import { auth, db } from "./lib/firebase";
 import { syncUserDataToFirestore } from "./lib/userSync";
 import { AuthModal } from "./components/AuthModal";
 import StarryBackground from "./components/StarryBackground";
+import AmbientSpotlight from "./components/AmbientSpotlight";
+import LiveRadarTicker from "./components/LiveRadarTicker";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -1651,19 +1653,36 @@ export default function App() {
             )}
           </div>
 
-          {/* Sachverhalt Textarea */}
+          {/* Sachverhalt Textarea with Laser-Scanline Beam */}
           <div className="space-y-2 mb-5">
             <label className="text-xs font-mono font-bold text-zinc-300 flex items-center justify-between">
               <span>FALLBESCHREIBUNG & ANGRIFFSPUNKTE FÜR DEN {cfg.title}:</span>
-              <span className="text-[10px] text-zinc-500 font-normal">Eigenen Text eingeben oder hochgeladene Dokumente nutzen</span>
+              {isLoading ? (
+                <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8]"></span>
+                  Optischer Laser-Scan aktiv...
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-500 font-normal">Eigenen Text eingeben oder hochgeladene Dokumente nutzen</span>
+              )}
             </label>
-            <textarea
-              rows={4}
-              value={moduleInputText}
-              onChange={(e) => setModuleInputText(e.target.value)}
-              placeholder="Geben Sie hier Ihre Urteilsgründe, Vorwürfe oder Angaben zum Verfahren ein..."
-              className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 placeholder-zinc-600 focus:border-amber-400 focus:outline-none font-mono leading-relaxed"
-            />
+            <div className="relative rounded-xl overflow-hidden">
+              <textarea
+                rows={4}
+                value={moduleInputText}
+                onChange={(e) => setModuleInputText(e.target.value)}
+                placeholder="Geben Sie hier Ihre Urteilsgründe, Vorwürfe oder Angaben zum Verfahren ein..."
+                className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 placeholder-zinc-600 focus:border-amber-400 focus:outline-none font-mono leading-relaxed relative z-10"
+              />
+
+              {/* Laser-Scanline Beam when isLoading */}
+              {isLoading && (
+                <div className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden border border-cyan-400/50 bg-cyan-950/20 backdrop-blur-[0.5px] z-20">
+                  <div className="animate-laser-scan w-full h-[2.5px] bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_15px_#38bdf8,0_0_30px_#38bdf8]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_90%,rgba(56,189,248,0.12)_100%)] bg-[length:100%_16px] opacity-60" />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Legal Disclaimer Box in Schriftsatz Module */}
@@ -1679,7 +1698,7 @@ export default function App() {
             <button
               onClick={() => startScan(moduleInputText, cfg.category, customDeliveryDate)}
               disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-mono font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-gold-glow flex items-center justify-center gap-2 cursor-pointer border border-amber-200"
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-mono font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-gold-glow flex items-center justify-center gap-2 cursor-pointer border border-amber-200 animate-shimmer"
             >
               {isLoading ? (
                 <>
@@ -1772,6 +1791,8 @@ export default function App() {
     <div id="main_app_container" className="min-h-screen bg-black text-gray-200 font-sans selection:bg-amber-500 selection:text-black pb-12 relative">
       {/* 3D Animated Starry Background with Shooting Stars */}
       <StarryBackground />
+      {/* Interactive Cursor Spotlight Glow Effect */}
+      <AmbientSpotlight />
 
       <div className="relative z-10">
       {/* PWA Install Banner */}
@@ -1853,6 +1874,9 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* 24/7 Live Radar Ticker & Kinetic Frequency Waveform */}
+      <LiveRadarTicker />
 
       {/* Premium Metallic Header with Left & Right Tab Wings */}
       <header id="app_header" className="border-b border-zinc-800 bg-gradient-to-b from-zinc-950 to-black py-6 px-3 text-center">
@@ -2540,19 +2564,43 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Main Textarea */}
+                {/* Main Textarea with Laser-Scanline Beam */}
                 <div className="space-y-1">
-                  <label className="block text-xs font-mono tracking-widest text-zinc-400 uppercase">Fallbeschreibung (Beschuldigter)</label>
-                  <textarea
-                    rows={6}
-                    value={situationText}
-                    onChange={(e) => {
-                      setSituationText(e.target.value);
-                      if (errorMessage) setErrorMessage(null);
-                    }}
-                    placeholder="Beispiel: Ich habe eine Vorladung als Beschuldigter wegen Diebstahls erhalten..."
-                    className="w-full bg-black border border-zinc-800 focus:border-zinc-600 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 leading-relaxed transition-all"
-                  />
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-mono tracking-widest text-zinc-400 uppercase">Fallbeschreibung (Beschuldigter)</label>
+                    {isLoading && (
+                      <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-1.5 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8]"></span>
+                        Optischer Laser-Scan aktiv...
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative rounded-xl overflow-hidden">
+                    <textarea
+                      rows={6}
+                      value={situationText}
+                      onChange={(e) => {
+                        setSituationText(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      placeholder="Beispiel: Ich habe eine Vorladung als Beschuldigter wegen Diebstahls erhalten..."
+                      className="w-full bg-black border border-zinc-800 focus:border-zinc-600 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 leading-relaxed transition-all relative z-10"
+                    />
+
+                    {/* Futuristic Laser-Scanline Beam when isLoading is active */}
+                    {isLoading && (
+                      <div className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden border border-cyan-400/50 bg-cyan-950/20 backdrop-blur-[0.5px] z-20">
+                        {/* Laser Scanline Beam */}
+                        <div className="animate-laser-scan w-full h-[2.5px] bg-gradient-to-r from-transparent via-cyan-300 to-transparent shadow-[0_0_15px_#38bdf8,0_0_30px_#38bdf8]" />
+                        {/* Radar grid sweep lines */}
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_90%,rgba(56,189,248,0.12)_100%)] bg-[length:100%_16px] opacity-60" />
+                        <div className="absolute top-2 right-3 flex items-center gap-1 px-2 py-0.5 rounded bg-black/85 border border-cyan-500/40 text-[9px] font-mono text-cyan-300 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                          <span>KI-SCANNER LÄUFT</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Trigger Buttons (DIREKT UNTER DEM TEXTFELD FÜR PERFEKTE ÜBERSICHT) */}
@@ -2560,7 +2608,7 @@ export default function App() {
                   <button
                     onClick={() => startScan()}
                     disabled={isLoading}
-                    className="flex-1 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-black py-4 px-6 rounded-xl font-display font-extrabold text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-gold-glow cursor-pointer"
+                    className="flex-1 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-black py-4 px-6 rounded-xl font-display font-extrabold text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-gold-glow cursor-pointer animate-shimmer"
                   >
                     {isLoading ? (
                       <>

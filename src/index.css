@@ -36,6 +36,72 @@
   box-shadow: 0 0 15px rgba(192, 192, 192, 0.15);
 }
 
+/* Kinetic Radar Equalizer Bars */
+@keyframes eqPulse1 { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+@keyframes eqPulse2 { 0%, 100% { height: 14px; } 50% { height: 5px; } }
+@keyframes eqPulse3 { 0%, 100% { height: 7px; } 50% { height: 18px; } }
+@keyframes eqPulse4 { 0%, 100% { height: 15px; } 50% { height: 6px; } }
+
+.animate-eq-1 { animation: eqPulse1 1.2s ease-in-out infinite; }
+.animate-eq-2 { animation: eqPulse2 1.4s ease-in-out infinite 0.2s; }
+.animate-eq-3 { animation: eqPulse3 1.1s ease-in-out infinite 0.4s; }
+.animate-eq-4 { animation: eqPulse4 1.3s ease-in-out infinite 0.1s; }
+
+/* Laser Scanline Beam Effect */
+@keyframes laserScanAnimation {
+  0% {
+    top: 2%;
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 96%;
+    opacity: 0.9;
+  }
+}
+
+.animate-laser-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  animation: laserScanAnimation 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* Metallic Shimmer Reflex */
+@keyframes metallicShimmerSweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  20%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 100%
+  );
+  transform: translateX(-150%) skewX(-20deg);
+  animation: metallicShimmerSweep 5.5s infinite ease-in-out;
+  pointer-events: none;
+}
+
 /* Animation for glowing elements */
 @keyframes goldPulse {
   0%, 100% {
