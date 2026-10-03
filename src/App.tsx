@@ -549,7 +549,19 @@ function formatGoldText(text: string): string {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("verfahrens_schutz");
+  const [activeTab, setActiveTabState] = useState<ActiveTab>("verfahrens_schutz");
+
+  const setActiveTab = (tab: ActiveTab) => {
+    setActiveTabState(tab);
+    setTimeout(() => {
+      const el = document.getElementById("main_content_area");
+      if (el) {
+        const yOffset = -25;
+        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+      }
+    }, 60);
+  };
   
   // Custom scan state
   const [situationText, setSituationText] = useState("");
@@ -1855,7 +1867,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("verfahrens_schutz")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "verfahrens_schutz"
                     ? "bg-amber-400 text-black shadow-gold-glow"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1868,7 +1880,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("mock_trial")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "mock_trial"
                     ? "bg-purple-600 text-white shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1881,7 +1893,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("kosten_finanzen")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "kosten_finanzen"
                     ? "bg-emerald-500 text-black shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1894,7 +1906,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("fristen_kalender")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "fristen_kalender"
                     ? "bg-amber-400 text-black shadow-gold-glow"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1907,7 +1919,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("akten_navigator")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "akten_navigator"
                     ? "bg-blue-600 text-white shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1921,7 +1933,7 @@ export default function App() {
                 type="button"
                 id="tab_button_rechtssicherheit_header"
                 onClick={() => setActiveTab("rechtssicherheit")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "rechtssicherheit"
                     ? "bg-teal-400 text-black shadow-md font-extrabold"
                     : "text-teal-400 hover:text-teal-300 hover:bg-zinc-900"
@@ -1961,7 +1973,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("rechtsprechungs_radar")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "rechtsprechungs_radar"
                     ? "bg-cyan-500 text-black shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1974,7 +1986,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("audio_tool")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "audio_tool"
                     ? "bg-rose-500 text-black shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -1987,7 +1999,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("ki_coach")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "ki_coach"
                     ? "bg-indigo-600 text-white shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -2000,7 +2012,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("selbstvertreter_leitfaden")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "selbstvertreter_leitfaden"
                     ? "bg-teal-500 text-black shadow-md"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -2013,7 +2025,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("anwalts_suche")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "anwalts_suche"
                     ? "bg-amber-400 text-black shadow-gold-glow"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-900"
@@ -2026,7 +2038,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("auslaenderrecht")}
-                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-2 rounded-lg text-xs font-mono font-bold flex items-center gap-2 transition-all duration-150 active:scale-95 cursor-pointer ${
                   activeTab === "auslaenderrecht"
                     ? "bg-emerald-400 text-black shadow-md font-extrabold"
                     : "text-emerald-400/80 hover:text-emerald-300 hover:bg-zinc-900"
@@ -2122,7 +2134,7 @@ export default function App() {
             <button
               id="tab_button_verfahrens_schutz"
               onClick={() => setActiveTab("verfahrens_schutz")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95 cursor-pointer ${
                 activeTab === "verfahrens_schutz"
                   ? "bg-gradient-to-b from-zinc-800 to-zinc-900 text-white border border-zinc-700 shadow-inner"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30"
@@ -2135,7 +2147,7 @@ export default function App() {
             <button
               id="tab_button_rechtssicherheit"
               onClick={() => setActiveTab("rechtssicherheit")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95 cursor-pointer ${
                 activeTab === "rechtssicherheit"
                   ? "bg-gradient-to-b from-teal-950 to-zinc-900 text-teal-300 border border-teal-500/50 shadow-silver-glow"
                   : "text-teal-400/70 hover:text-teal-300 hover:bg-zinc-900/30"
@@ -2148,7 +2160,7 @@ export default function App() {
             <button
               id="tab_button_gesetzes_radar"
               onClick={() => setActiveTab("gesetzes_radar")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer relative ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95 cursor-pointer relative ${
                 activeTab === "gesetzes_radar"
                   ? "bg-gradient-to-b from-zinc-800 to-zinc-900 text-white border border-amber-500/40 shadow-inner"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30"
@@ -2169,7 +2181,7 @@ export default function App() {
             <button
               id="tab_button_gesetzes_datenbank"
               onClick={() => setActiveTab("gesetzes_datenbank")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95 cursor-pointer ${
                 activeTab === "gesetzes_datenbank"
                   ? "bg-gradient-to-b from-zinc-800 to-zinc-900 text-white border border-zinc-700 shadow-inner"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30"
@@ -2182,7 +2194,7 @@ export default function App() {
             <button
               id="tab_button_soforthilfe_info"
               onClick={() => setActiveTab("soforthilfe_info")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 active:scale-95 cursor-pointer ${
                 activeTab === "soforthilfe_info"
                   ? "bg-gradient-to-b from-zinc-800 to-zinc-900 text-white border border-zinc-700 shadow-inner"
                   : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30"
@@ -2218,7 +2230,7 @@ export default function App() {
             <button
               id="tab_button_berufung"
               onClick={() => setActiveTab("berufung")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-between gap-1 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-between gap-1 border ${
                 activeTab === "berufung"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2239,7 +2251,7 @@ export default function App() {
             <button
               id="tab_button_revision"
               onClick={() => setActiveTab("revision")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-between gap-1 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-between gap-1 border ${
                 activeTab === "revision"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2260,7 +2272,7 @@ export default function App() {
             <button
               id="tab_button_wiederaufnahme"
               onClick={() => setActiveTab("wiederaufnahme")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-between gap-1 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-between gap-1 border ${
                 activeTab === "wiederaufnahme"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2281,7 +2293,7 @@ export default function App() {
             <button
               id="tab_button_verfassungsbeschwerde"
               onClick={() => setActiveTab("verfassungsbeschwerde")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-between gap-1 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-between gap-1 border ${
                 activeTab === "verfassungsbeschwerde"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2322,7 +2334,7 @@ export default function App() {
             <button
               id="tab_button_verkehrs_scanner"
               onClick={() => setActiveTab("verkehrs_scanner")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 border ${
                 activeTab === "verkehrs_scanner"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2334,7 +2346,7 @@ export default function App() {
             <button
               id="tab_button_verkehrs_ueberwachung"
               onClick={() => setActiveTab("verkehrs_ueberwachung")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 border ${
                 activeTab === "verkehrs_ueberwachung"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2346,7 +2358,7 @@ export default function App() {
             <button
               id="tab_button_verkehrs_assistent"
               onClick={() => setActiveTab("verkehrs_assistent")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 border ${
                 activeTab === "verkehrs_assistent"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2358,7 +2370,7 @@ export default function App() {
             <button
               id="tab_button_verkehrs_alerts"
               onClick={() => setActiveTab("verkehrs_alerts")}
-              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
+              className={`px-3 py-2 rounded-lg text-xs font-mono font-bold transition-all duration-150 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 border ${
                 activeTab === "verkehrs_alerts"
                   ? "bg-amber-400 text-black border-amber-300 shadow-sm"
                   : "bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-amber-500/40 hover:text-white"
@@ -2371,7 +2383,7 @@ export default function App() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-4 mt-8">
+      <main id="main_content_area" className="max-w-4xl mx-auto px-4 mt-8">
         
         {/* TAB 1: VERFAHRENS-SCHUTZ & KI SCANNER */}
         <AnimatePresence mode="wait">
