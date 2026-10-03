@@ -1793,11 +1793,22 @@ app.post("/api/create-checkout-session", async (req, res) => {
     schriftsatz_single: { amount: 999, name: "Prüfungsfertiges Schriftsatz-Modul (1x Nutzung)", mode: "payment", paddleEnvKey: "PADDLE_PRICE_SCHRIFTSATZ_BERUFUNG", stripeEnvKey: "STRIPE_PRICE_SCHRIFTSATZ_BERUFUNG" },
   };
 
+  const defaultPaddlePrices: Record<string, string> = {
+    PADDLE_PRICE_GESETZE_YEARLY: "pri_01kzztqb7j4hmymt9ar5pq8ejz",
+    PADDLE_PRICE_GESETZE_LIFETIME: "pri_01kzztzw480j8y5hpf9j5vrjce",
+    PADDLE_PRICE_TRAFFIC_YEARLY: "pri_01kzzv93jdap172qte544rx8rh",
+    PADDLE_PRICE_TRAFFIC_LIFETIME: "pri_01kzzvcsrtdrvp4qca01fq75kx",
+    PADDLE_PRICE_SCHRIFTSATZ_BERUFUNG: "pri_01kzzvjyq8vb13c0r3efh5nt3d",
+    PADDLE_PRICE_SCHRIFTSATZ_REVISION: "pri_01kzzvn65fkjw187f6fmgecbhx",
+    PADDLE_PRICE_SCHRIFTSATZ_WIEDERAUFNAHME: "pri_01kzzvtsk3tzhcppsw02t7htc2",
+    PADDLE_PRICE_SCHRIFTSATZ_VERFASSUNGSBESCHWERDE: "pri_01kzzvxr4nagkzgfh043m8wvm3",
+  };
+
   const selected = prices[planType] || prices.allgemein_annual;
 
   // 1. PADDLE BILLING INTEGRATION
-  const paddleApiKey = process.env.PADDLE_API_KEY;
-  const paddlePriceId = process.env[selected.paddleEnvKey];
+  const paddleApiKey = (process.env.PADDLE_API_KEY || "").trim();
+  const paddlePriceId = process.env[selected.paddleEnvKey] || defaultPaddlePrices[selected.paddleEnvKey];
 
   if (paddleApiKey) {
     try {
@@ -1807,7 +1818,7 @@ app.post("/api/create-checkout-session", async (req, res) => {
         : "https://api.paddle.com/transactions";
 
       const origin = req.headers.origin || "http://localhost:3000";
-      const returnUrl = `${origin}?payment_success=true&plan=${planType}`;
+      const returnUrl = `${origin}?payment_success=true&plan=${encodeURIComponent(planType || "standard")}`;
 
       const payload: any = {
         items: [
@@ -1828,19 +1839,17 @@ app.post("/api/create-checkout-session", async (req, res) => {
                 quantity: 1,
               },
         ],
-        checkout: {
-          url: returnUrl,
+        collection_mode: "automatic",
+        custom_data: {
+          planType,
+          userEmail: email || "",
         },
       };
-
-      if (email && email.includes("@")) {
-        payload.customer = { email };
-      }
 
       const paddleRes = await fetch(paddleApiUrl, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${paddleApiKey}`,
+          Authorization: `Bearer ${paddleApiKey.trim()}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
@@ -1934,8 +1943,12 @@ app.get("/sitemap.xml", (req, res) => {
 // Configure Vite or Static Files
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const isHmrDisabled = process.env.DISABLE_HMR === "true";
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : undefined,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

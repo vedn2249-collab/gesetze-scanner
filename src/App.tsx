@@ -2082,6 +2082,23 @@ export default function App() {
         </div>
       )}
 
+      {/* Prominenter rechtlicher Hinweis ganz oben (Paddle & Compliance Konformität) */}
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+        <div className="p-3.5 sm:p-4 rounded-xl border border-amber-500/40 bg-zinc-950/90 shadow-gold-glow text-left">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-mono font-bold text-amber-400 uppercase text-xs tracking-wider block">
+                Wichtiger rechtlicher Hinweis:
+              </span>
+              <p className="text-zinc-300 text-xs sm:text-[13px] leading-relaxed">
+                Der Gesetze-Scanner ist eine rein technische Software-Anwendung zur automatisierten Text- und Dokumentenanalyse. Die Anwendung bietet zu keinem Zeitpunkt eine Rechtsberatung, juristische Prüfungen oder behördliche Dienstleistungen an und trifft keinerlei rechtsverbindliche Entscheidungen über natürliche Personen. Alle generierten Ergebnisse dienen ausschließlich der technischen Textverarbeitung und Vorbereitung. Die Verantwortung für die inhaltliche und rechtliche Prüfung von Dokumenten verbleibt voll und ganz beim Anwender.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Silver & Gold Tabs Navigation */}
       <div className="max-w-4xl mx-auto px-4 mt-6 space-y-3">
         {/* Primary Navigation Bar: Normaler Gesetzes-Scanner */}
