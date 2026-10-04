@@ -19,7 +19,7 @@ export const PADDLE_CLIENT_TOKEN =
 // Beginnt mit "pri_..."
 export const PADDLE_PRICE_IDS: Record<string, string> = {
   // Gesetzes-Scanner Hauptbereich
-  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pro_01m43kk5kpqtg7w59q5tnf7tc9",
+  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
   allgemein_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
   gesetze_yearly: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
   gesetze_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
