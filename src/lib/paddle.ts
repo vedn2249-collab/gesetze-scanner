@@ -12,16 +12,16 @@ const metaEnv = typeof import.meta !== "undefined" ? (import.meta as any).env ||
 // Beginnt im Sandbox-Modus mit "test_..."
 export const PADDLE_CLIENT_TOKEN =
   metaEnv.VITE_PADDLE_CLIENT_TOKEN ||
-  "test_b8653627e19e18c0538156540a7"; // <--- HIER DEIN test_... PADDLE CLIENT-TOKEN EINTRAGEN
+  "live_2125f462f48e3cfcbcf0cae3ee6"; // <--- HIER DEIN test_... PADDLE CLIENT-TOKEN EINTRAGEN
 
 // 2. PADDLE PRICE-IDs (SANDBOX)
 // Aus dem Paddle Dashboard: Catalog > Prices
 // Beginnt mit "pri_..."
 export const PADDLE_PRICE_IDS: Record<string, string> = {
   // Gesetzes-Scanner Hauptbereich
-  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
+  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01kzztqb7j4hmymt9ar5pq8ejz",
   allgemein_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
-  gesetze_yearly: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
+  gesetze_yearly: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01kzztqb7j4hmymt9ar5pq8ejz",
   gesetze_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
 
   // StVO-Verkehrsmittel-Scanner
