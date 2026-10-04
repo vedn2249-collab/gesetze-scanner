@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Car, Bike, Truck, Footprints, Zap, Sliders, CheckCircle2, AlertCircle } from 'lucide-react';
 import { VehicleType, TrafficUser } from '../types';
+import { openPaddleCheckout } from '../lib/paddle';
 
 interface TrafficSubscribeFormProps {
   currentUser: TrafficUser | null;
@@ -58,52 +59,48 @@ export default function TrafficSubscribeForm({ currentUser, onRegisterSuccess, i
     setIsLoading(true);
     setMessage(null);
 
-    try {
-      // Call revenue checkout API endpoint
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planType: planType === 'yearly' ? 'traffic_yearly' : 'traffic_lifetime',
+    const targetPlan = planType === 'yearly' ? 'traffic_yearly' : 'traffic_lifetime';
+
+    // Echtes Paddle Checkout Overlay öffnen (Sandbox-Testumgebung)
+    await openPaddleCheckout({
+      planType: targetPlan,
+      email: email.trim(),
+      onSuccess: () => {
+        const isUpdate = !!currentUser;
+        const newUser: TrafficUser = {
           email: email.trim(),
-        }),
-      });
+          vehicles: selectedVehicles,
+          registeredAt: currentUser?.registeredAt || new Date().toISOString(),
+          paidUntil: planType === 'lifetime' ? '2099-12-31' : new Date(Date.now() + 365 * 86400000).toISOString(),
+          paymentType: planType === 'lifetime' ? 'lifetime' : 'yearly'
+        };
 
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-        return;
+        try {
+          localStorage.setItem('gs_traffic_user', JSON.stringify(newUser));
+          localStorage.setItem('gs_traffic_unlocked', 'true');
+        } catch (err) {
+          console.warn('Could not save to localStorage', err);
+        }
+
+        setMessage({
+          type: 'success',
+          text: `🎉 Zahlung über Paddle Sandbox erfolgreich! StVO-Filter ist jetzt aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}). Transaktion im Paddle Dashboard registriert.`
+        });
+
+        onRegisterSuccess(newUser, isUpdate);
+        setIsLoading(false);
+      },
+      onClose: () => {
+        setIsLoading(false);
+      },
+      onError: (err) => {
+        setIsLoading(false);
+        setMessage({
+          type: 'error',
+          text: 'Paddle Checkout Fehler: ' + (err?.message || 'Zahlungsvorgang abgebrochen oder ungültig.')
+        });
       }
-    } catch (err) {
-      console.warn('Checkout endpoint error, proceeding with instant registration:', err);
-    }
-
-    setTimeout(() => {
-      const isUpdate = !!currentUser;
-      const newUser: TrafficUser = {
-        email: email.trim(),
-        vehicles: selectedVehicles,
-        registeredAt: currentUser?.registeredAt || new Date().toISOString(),
-        paidUntil: planType === 'lifetime' ? '2099-12-31' : new Date(Date.now() + 365 * 86400000).toISOString(),
-        paymentType: planType === 'lifetime' ? 'lifetime' : 'yearly'
-      };
-
-      try {
-        localStorage.setItem('gs_traffic_user', JSON.stringify(newUser));
-      } catch (err) {
-        console.warn('Could not save to localStorage', err);
-      }
-
-      setMessage({
-        type: 'success',
-        text: isUpdate 
-          ? `✅ Fahrzeug-Präferenzen erfolgreich aktualisiert (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'})!` 
-          : `🎉 Erfolgreich freigeschaltet! StVO-Filter aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}).`
-      });
-
-      onRegisterSuccess(newUser, isUpdate);
-      setIsLoading(false);
-    }, 400);
+    });
   };
 
   return (

@@ -80,6 +80,7 @@ import { AuthModal } from "./components/AuthModal";
 import StarryBackground from "./components/StarryBackground";
 import AmbientSpotlight from "./components/AmbientSpotlight";
 import LiveRadarTicker from "./components/LiveRadarTicker";
+import { openPaddleCheckout } from "./lib/paddle";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -1304,34 +1305,8 @@ export default function App() {
 
     // Form Validation Logic
     if (!paymentEmail.trim() || !paymentEmail.includes("@")) {
-      setPaymentValidationError("Bitte geben Sie eine gültige E-Mail-Adresse für die Abo-Rechnung an.");
+      setPaymentValidationError("Bitte geben Sie eine gültige E-Mail-Adresse für die Abrechnung an.");
       return;
-    }
-
-    if (paymentMethod === "card") {
-      if (!paymentName.trim()) {
-        setPaymentValidationError("Bitte geben Sie den Namen des Karteninhabers an.");
-        return;
-      }
-      const rawCard = paymentCardNumber.replace(/\s/g, "");
-      if (rawCard.length < 12) {
-        setPaymentValidationError("Bitte geben Sie eine gültige 16-stellige Kartennummer ein.");
-        return;
-      }
-      if (!paymentCardExpiry.trim() || !paymentCardCvc.trim()) {
-        setPaymentValidationError("Bitte geben Sie Ablaufdatum (MM/JJ) und CVC an.");
-        return;
-      }
-    } else if (paymentMethod === "sepa") {
-      if (!paymentName.trim()) {
-        setPaymentValidationError("Bitte geben Sie den Namen des Kontoinhabers an.");
-        return;
-      }
-      const rawIban = paymentIban.replace(/\s/g, "");
-      if (rawIban.length < 15) {
-        setPaymentValidationError("Bitte geben Sie eine gültige IBAN ein.");
-        return;
-      }
     }
 
     if (!paymentAgreedTerms) {
@@ -1340,88 +1315,84 @@ export default function App() {
     }
 
     setIsProcessingPayment(true);
-    const generatedId = `GS-SUB-2026-${Math.floor(100000 + Math.random() * 900000)}`;
-    setPaymentTransactionId(generatedId);
+    const planCode = selectedPlan || "allgemein_annual";
 
-    // Try calling revenue checkout session API if Stripe is active
-    try {
-      const planCode = selectedPlan || "allgemein_annual";
-      const apiRes = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planType: planCode, email: paymentEmail.trim() })
-      });
-      const data = await apiRes.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-        return;
+    // Echtes Paddle Checkout Overlay öffnen (Sandbox-Testumgebung)
+    await openPaddleCheckout({
+      planType: planCode,
+      email: paymentEmail.trim(),
+      onSuccess: async (data: any) => {
+        setIsProcessingPayment(false);
+        setPaymentSuccess(true);
+        const txnId = data?.transaction_id || data?.id || `GS-PADDLE-${Date.now()}`;
+        setPaymentTransactionId(txnId);
+
+        // Auto create Firebase account if user entered a password during checkout and isn't logged in
+        if (!auth.currentUser && paymentEmail && paymentPassword && paymentPassword.length >= 6) {
+          try {
+            await createUserWithEmailAndPassword(auth, paymentEmail.trim(), paymentPassword);
+          } catch (e) {
+            console.warn("Auto account creation during checkout notice:", e);
+          }
+        }
+
+        if (selectedPlan === "traffic_annual" || selectedPlan === "traffic_lifetime") {
+          setIsTrafficUnlocked(true);
+          try {
+            localStorage.setItem("gs_traffic_unlocked", "true");
+            const newUser = {
+              email: paymentEmail.trim() || "nutzer@domain.de",
+              vehicles: ['auto'],
+              registeredAt: new Date().toISOString(),
+              paidUntil: selectedPlan === "traffic_lifetime" ? '2099-12-31' : new Date(Date.now() + 365 * 86400000).toISOString(),
+              paymentType: selectedPlan === "traffic_lifetime" ? 'lifetime' : 'yearly'
+            };
+            localStorage.setItem("gs_traffic_user", JSON.stringify(newUser));
+            setTrafficUser(newUser as any);
+          } catch (e) {
+            console.warn("Storage error", e);
+          }
+          await syncUserDataToFirestore({ isTrafficUnlocked: true });
+        } else if (selectedPlan?.startsWith("schriftsatz_")) {
+          let subKey: keyof typeof schriftsatzCredits = "berufung";
+          if (selectedPlan === "schriftsatz_revision") subKey = "revision";
+          else if (selectedPlan === "schriftsatz_wiederaufnahme") subKey = "wiederaufnahme";
+          else if (selectedPlan === "schriftsatz_verfassungsbeschwerde") subKey = "verfassungsbeschwerde";
+          else if (selectedPlan === "schriftsatz_berufung") subKey = "berufung";
+          else if (selectedPlan === "schriftsatz_single") {
+            subKey = (["berufung", "revision", "wiederaufnahme", "verfassungsbeschwerde"].includes(activeTab) ? activeTab : "berufung") as any;
+          }
+
+          const updatedCredits = { ...schriftsatzCredits, [subKey]: (schriftsatzCredits[subKey] || 0) + 1 };
+          setSchriftsatzCredits(updatedCredits);
+          try {
+            localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(updatedCredits));
+          } catch (e) {
+            console.warn("Storage error", e);
+          }
+          await syncUserDataToFirestore({ schriftsatzCredits: updatedCredits });
+        } else {
+          setIsPremiumUnlocked(true);
+          try {
+            localStorage.setItem("gs_premium_unlocked", "true");
+          } catch (e) {
+            console.warn("Storage error", e);
+          }
+          await syncUserDataToFirestore({ isPremiumUnlocked: true });
+        }
+
+        setTimeout(() => {
+          setShowPaymentModal(false);
+        }, 1800);
+      },
+      onClose: () => {
+        setIsProcessingPayment(false);
+      },
+      onError: (err: any) => {
+        setIsProcessingPayment(false);
+        setPaymentValidationError("Paddle Checkout Fehler: " + (err?.message || "Checkout abgebrochen oder ungültig."));
       }
-    } catch (e) {
-      console.warn("Backend checkout integration fallback:", e);
-    }
-
-    setTimeout(async () => {
-      setIsProcessingPayment(false);
-      setPaymentSuccess(true);
-
-      // Auto create Firebase account if user entered a password during checkout and isn't logged in
-      if (!auth.currentUser && paymentEmail && paymentPassword && paymentPassword.length >= 6) {
-        try {
-          await createUserWithEmailAndPassword(auth, paymentEmail.trim(), paymentPassword);
-        } catch (e) {
-          console.warn("Auto account creation during checkout notice:", e);
-        }
-      }
-
-      if (selectedPlan === "traffic_annual" || selectedPlan === "traffic_lifetime") {
-        setIsTrafficUnlocked(true);
-        try {
-          localStorage.setItem("gs_traffic_unlocked", "true");
-          const newUser = {
-            email: paymentEmail.trim() || "nutzer@domain.de",
-            vehicles: ['auto'],
-            registeredAt: new Date().toISOString(),
-            paidUntil: selectedPlan === "traffic_lifetime" ? '2099-12-31' : new Date(Date.now() + 365 * 86400000).toISOString(),
-            paymentType: selectedPlan === "traffic_lifetime" ? 'lifetime' : 'yearly'
-          };
-          localStorage.setItem("gs_traffic_user", JSON.stringify(newUser));
-          setTrafficUser(newUser as any);
-        } catch (e) {
-          console.warn("Storage error", e);
-        }
-        await syncUserDataToFirestore({ isTrafficUnlocked: true });
-      } else if (selectedPlan?.startsWith("schriftsatz_")) {
-        let subKey: keyof typeof schriftsatzCredits = "berufung";
-        if (selectedPlan === "schriftsatz_revision") subKey = "revision";
-        else if (selectedPlan === "schriftsatz_wiederaufnahme") subKey = "wiederaufnahme";
-        else if (selectedPlan === "schriftsatz_verfassungsbeschwerde") subKey = "verfassungsbeschwerde";
-        else if (selectedPlan === "schriftsatz_berufung") subKey = "berufung";
-        else if (selectedPlan === "schriftsatz_single") {
-          subKey = (["berufung", "revision", "wiederaufnahme", "verfassungsbeschwerde"].includes(activeTab) ? activeTab : "berufung") as any;
-        }
-
-        const updatedCredits = { ...schriftsatzCredits, [subKey]: (schriftsatzCredits[subKey] || 0) + 1 };
-        setSchriftsatzCredits(updatedCredits);
-        try {
-          localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(updatedCredits));
-        } catch (e) {
-          console.warn("Storage error", e);
-        }
-        await syncUserDataToFirestore({ schriftsatzCredits: updatedCredits });
-      } else {
-        setIsPremiumUnlocked(true);
-        try {
-          localStorage.setItem("gs_premium_unlocked", "true");
-        } catch (e) {
-          console.warn("Storage error", e);
-        }
-        await syncUserDataToFirestore({ isPremiumUnlocked: true });
-      }
-
-      setTimeout(() => {
-        setShowPaymentModal(false);
-      }, 1800);
-    }, 1200);
+    });
   };
 
   const toggleStep = (stepId: string) => {
@@ -4375,48 +4346,28 @@ export default function App() {
                       </p>
                     </div>
 
-                    {/* Payment Method Tabs */}
-                    <div>
-                      <label className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5 font-bold">Zahlungsmethode wählen</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod("card")}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                            paymentMethod === "card"
-                              ? "bg-amber-400/10 border-amber-400/60 text-amber-300 shadow-sm"
-                              : "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                          }`}
-                        >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Kreditkarte</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod("paypal")}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                            paymentMethod === "paypal"
-                              ? "bg-amber-400/10 border-amber-400/60 text-amber-300 shadow-sm"
-                              : "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>PayPal</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod("sepa")}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                            paymentMethod === "sepa"
-                              ? "bg-amber-400/10 border-amber-400/60 text-amber-300 shadow-sm"
-                              : "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                          }`}
-                        >
-                          <Lock className="w-3.5 h-3.5" />
-                          <span>SEPA Lastschrift</span>
-                        </button>
+                    {/* Paddle Security & Payment Gateway Banner */}
+                    <div className="p-3.5 bg-zinc-900/80 rounded-xl border border-amber-500/30 text-xs space-y-2 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          Zahlungsabwicklung: Paddle Checkout (Sandbox)
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
+                          Live-Sandbox Test
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">
+                        Ihre Bestellung wird über das offizielle <strong>Paddle Checkout Overlay</strong> übermittelt. Alle Transaktionen werden direkt im <strong>Paddle Dashboard</strong> unter <em>Transactions</em> erfasst.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1 border-t border-zinc-800 text-[10px] font-mono text-zinc-400">
+                        <span className="flex items-center gap-1">💳 Kreditkarte</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">🅿️ PayPal</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">🏦 SEPA-Lastschrift</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">🔒 256-Bit SSL</span>
                       </div>
                     </div>
 
@@ -4454,87 +4405,6 @@ export default function App() {
                         <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           <span>Abo wird direkt mit Ihrem Konto ({currentUser.email}) verknüpft.</span>
-                        </div>
-                      )}
-
-                      {paymentMethod === "card" && (
-                        <>
-                          <div>
-                            <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Name des Karteninhabers *</label>
-                            <input
-                              type="text"
-                              value={paymentName}
-                              onChange={(e) => setPaymentName(e.target.value)}
-                              placeholder="Max Mustermann"
-                              className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Kartennummer (Visa / Mastercard) *</label>
-                            <input
-                              type="text"
-                              value={paymentCardNumber}
-                              onChange={(e) => setPaymentCardNumber(e.target.value)}
-                              placeholder="4532 •••• •••• 8892"
-                              className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Ablaufdatum *</label>
-                              <input
-                                type="text"
-                                value={paymentCardExpiry}
-                                onChange={(e) => setPaymentCardExpiry(e.target.value)}
-                                placeholder="MM/JJ"
-                                className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono text-center"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">CVC / Security Code *</label>
-                              <input
-                                type="password"
-                                maxLength={4}
-                                value={paymentCardCvc}
-                                onChange={(e) => setPaymentCardCvc(e.target.value)}
-                                placeholder="123"
-                                className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono text-center"
-                              />
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {paymentMethod === "sepa" && (
-                        <>
-                          <div>
-                            <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Name des Kontoinhabers *</label>
-                            <input
-                              type="text"
-                              value={paymentName}
-                              onChange={(e) => setPaymentName(e.target.value)}
-                              placeholder="Max Mustermann"
-                              className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">IBAN *</label>
-                            <input
-                              type="text"
-                              value={paymentIban}
-                              onChange={(e) => setPaymentIban(e.target.value)}
-                              placeholder="DE89 3704 0044 0532 0130 00"
-                              className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono uppercase"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {paymentMethod === "paypal" && (
-                        <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-xs text-zinc-400 leading-relaxed">
-                          Sie werden im nächsten Schritt zu PayPal weitergeleitet, um die Abbuchung zu bestätigen.
                         </div>
                       )}
                     </div>
@@ -4587,11 +4457,11 @@ export default function App() {
                         {isProcessingPayment ? (
                           <>
                             <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-                            <span>Prüfe Zahlungsdaten & Autorisierung...</span>
+                            <span>Paddle Checkout Overlay wird geöffnet...</span>
                           </>
                         ) : (
                           <span>
-                            Kostenpflichtig bestellen ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 €" : "9,99 €"})
+                            Jetzt mit Paddle bestellen ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 €" : "9,99 €"})
                           </span>
                         )}
                       </button>
