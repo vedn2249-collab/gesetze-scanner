@@ -83,14 +83,12 @@ export async function initializePaddle(): Promise<boolean> {
       const isExplicitLive = metaEnv.VITE_PADDLE_ENVIRONMENT === "live" || metaEnv.VITE_PADDLE_ENVIRONMENT === "production";
       const isLive = isLiveToken || isExplicitLive;
 
-      if (isLive) {
-        // Live Production Modus (für echte Transaktionen & Live-Konto)
-        window.Paddle.Environment.set("production");
-        console.log("Paddle.js LIVE PRODUCTION Modus aktiviert.");
-      } else {
-        // Sandbox Testumgebung
+      if (!isLive) {
+        // Nur in der Sandbox Testumgebung aufrufen (Paddle v2 Standard ist Live)
         window.Paddle.Environment.set("sandbox");
         console.log("Paddle.js SANDBOX Testmodus aktiviert.");
+      } else {
+        console.log("Paddle.js LIVE PRODUCTION Modus aktiv (Standard).");
       }
 
       // 2. Mit Client Token initialisieren
