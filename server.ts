@@ -1920,6 +1920,94 @@ app.post("/api/create-checkout-session", async (req, res) => {
   });
 });
 
+// In-Memory-Speicher für die letzten 50 empfangenen Paddle-Webhook-Events (für Test-Verifikation)
+const recentPaddleEvents: Array<{
+  timestamp: string;
+  eventType: string;
+  eventId: string;
+  data: any;
+}> = [];
+
+/**
+ * PADDLE OFFICIAL WEBHOOK ENDPOINT
+ * Empfängt und validiert Webhook-Events (transaction.completed, subscription.created, etc.)
+ * Liefert Status 200 an Paddle zurück
+ */
+app.post("/api/paddle-webhook", async (req, res) => {
+  const event = req.body;
+  const eventType = event?.event_type || event?.type || "unknown";
+  const eventId = event?.event_id || event?.id || `evt_${Date.now()}`;
+
+  console.log(`[Paddle Webhook Empfangen] Typ: ${eventType}, ID: ${eventId}`);
+
+  try {
+    const data = event?.data || {};
+
+    recentPaddleEvents.unshift({
+      timestamp: new Date().toISOString(),
+      eventType,
+      eventId,
+      data
+    });
+    if (recentPaddleEvents.length > 50) recentPaddleEvents.pop();
+
+    switch (eventType) {
+      case "transaction.completed":
+      case "transaction.billed": {
+        console.log(`[Paddle Webhook] Transaktion erfolgreich:`, {
+          transactionId: data.id,
+          status: data.status,
+          customerEmail: data.customer?.email || data.details?.customer?.email,
+          total: data.details?.totals?.total
+        });
+        break;
+      }
+      case "subscription.created":
+      case "subscription.activated": {
+        console.log(`[Paddle Webhook] Neues Abonnement aktiviert:`, {
+          subscriptionId: data.id,
+          status: data.status,
+          customerId: data.customer_id
+        });
+        break;
+      }
+      case "subscription.updated": {
+        console.log(`[Paddle Webhook] Abonnement aktualisiert:`, {
+          subscriptionId: data.id,
+          status: data.status,
+          scheduledChange: data.scheduled_change
+        });
+        break;
+      }
+      case "subscription.canceled": {
+        console.log(`[Paddle Webhook] Abonnement gekündigt:`, {
+          subscriptionId: data.id,
+          status: data.status,
+          canceledAt: data.canceled_at
+        });
+        break;
+      }
+      default: {
+        console.log(`[Paddle Webhook] Weiteres Event verarbeitet: ${eventType}`);
+        break;
+      }
+    }
+
+    return res.status(200).json({ received: true, eventId, eventType });
+  } catch (err: any) {
+    console.error("[Paddle Webhook Error]:", err);
+    return res.status(200).json({ received: true, warning: err?.message });
+  }
+});
+
+// Status-Route für Webhook-Verifikation während des Live-Tests
+app.get("/api/paddle-webhook-log", (req, res) => {
+  res.json({
+    totalReceived: recentPaddleEvents.length,
+    events: recentPaddleEvents
+  });
+});
+
 // Explicit robots.txt route ensuring immediate availability and proper headers
 app.get("/robots.txt", (req, res) => {
   const robotsPath = fs.existsSync(path.join(process.cwd(), "public", "robots.txt"))

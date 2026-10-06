@@ -71,7 +71,7 @@ import {
   requestNotificationPermission, 
   getNotificationPermission 
 } from "./lib/notificationService";
-import { Car, Globe, Mail } from "lucide-react";
+import { Car, Globe, Mail, ExternalLink } from "lucide-react";
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "./lib/firebase";
@@ -80,7 +80,7 @@ import { AuthModal } from "./components/AuthModal";
 import StarryBackground from "./components/StarryBackground";
 import AmbientSpotlight from "./components/AmbientSpotlight";
 import LiveRadarTicker from "./components/LiveRadarTicker";
-import { openPaddleCheckout } from "./lib/paddle";
+import { openPaddleCheckout, formatPaddleError } from "./lib/paddle";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -659,6 +659,7 @@ export default function App() {
   const [paymentCardCvc, setPaymentCardCvc] = useState("");
   const [paymentIban, setPaymentIban] = useState("");
   const [paymentAgreedTerms, setPaymentAgreedTerms] = useState(false);
+  const [paymentDiscountCode, setPaymentDiscountCode] = useState("");
   const [paymentValidationError, setPaymentValidationError] = useState<string | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string>("");
 
@@ -718,12 +719,33 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Check for URL hash or path on load to directly open legal modals (/terms, /refunds, /impressum, /datenschutz)
+  // Check for URL hash, query params or path on load to directly open modals or handle checkout success
   useEffect(() => {
     const handleUrlRoute = () => {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
+      const searchParams = new URLSearchParams(window.location.search);
       
+      // Paddle Checkout Redirect Rückkehr-Erkennung
+      if (searchParams.get("payment_success") === "true") {
+        setIsPremiumUnlocked(true);
+        try {
+          localStorage.setItem("gs_premium_unlocked", "true");
+        } catch (e) {}
+        setPaymentSuccess(true);
+        setShowPaymentModal(true);
+        syncUserDataToFirestore({ isPremiumUnlocked: true });
+        // Bereinige URL Parameter nach erfolgreicher Verbuchung
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // Direkter Aufruf zum Checkout-Öffnen (z.B. auf https://gesetze-scanner.onrender.com?checkout=allgemein_annual)
+      const directCheckout = searchParams.get("checkout") || searchParams.get("open_checkout");
+      if (directCheckout) {
+        setSelectedPlan(directCheckout);
+        setShowPaymentModal(true);
+      }
+
       if (path === "/terms" || path === "/agb" || hash === "#terms" || hash === "#agb") {
         setShowTermsModal(true);
       } else if (path === "/refunds" || path === "/refund" || hash === "#refunds" || hash === "#refund") {
@@ -1317,10 +1339,11 @@ export default function App() {
     setIsProcessingPayment(true);
     const planCode = selectedPlan || "allgemein_annual";
 
-    // Echtes Paddle Checkout Overlay öffnen (Sandbox-Testumgebung)
+    // Echtes Paddle Checkout Overlay öffnen (Live/Sandbox)
     await openPaddleCheckout({
       planType: planCode,
       email: paymentEmail.trim(),
+      discountCode: paymentDiscountCode.trim(),
       onSuccess: async (data: any) => {
         setIsProcessingPayment(false);
         setPaymentSuccess(true);
@@ -1390,7 +1413,7 @@ export default function App() {
       },
       onError: (err: any) => {
         setIsProcessingPayment(false);
-        setPaymentValidationError("Paddle Checkout Fehler: " + (err?.message || "Checkout abgebrochen oder ungültig."));
+        setPaymentValidationError(formatPaddleError(err));
       }
     });
   };
@@ -4407,6 +4430,24 @@ export default function App() {
                           <span>Abo wird direkt mit Ihrem Konto ({currentUser.email}) verknüpft.</span>
                         </div>
                       )}
+
+                      {/* Rabattcode / 100% Test-Gutschein Eingabefeld */}
+                      <div>
+                        <label className="block text-[10px] font-mono text-zinc-300 uppercase mb-1 flex items-center justify-between">
+                          <span>Gutscheincode / Rabatt (für 100% Testkauf)</span>
+                          <span className="text-[9px] text-amber-400 font-mono">Optional</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentDiscountCode}
+                          onChange={(e) => setPaymentDiscountCode(e.target.value)}
+                          placeholder="z. B. TEST100 oder dsc_..."
+                          className="w-full bg-black border border-zinc-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                        />
+                        <p className="text-[9px] text-zinc-400 mt-1">
+                          Kann auch direkt im Paddle-Overlay unter „Gutschein anwenden“ eingegeben werden.
+                        </p>
+                      </div>
                     </div>
 
                     {/* Terms Checkbox */}
@@ -4437,6 +4478,28 @@ export default function App() {
                         und verlange und bestätige die kostenpflichtige Bestellung ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr mit 12 Monaten Mindestlaufzeit" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 € einmalig" : "9,99 € pro Schriftsatz-Erstellung"}).
                       </p>
                     </div>
+
+                    {/* Hinweis bei Aufruf außerhalb der genehmigten Render-Domain */}
+                    {typeof window !== "undefined" && !window.location.hostname.includes("onrender.com") && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-amber-400">
+                          <Globe className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>Genehmigte Paddle Live-Domain: gesetze-scanner.onrender.com</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300">
+                          Paddle Live erlaubt Checkouts nur auf Ihrer genehmigten Domain. Wenn Sie hier in der Editor-Vorschau sind, testen Sie den Kauf direkt auf Render:
+                        </p>
+                        <a
+                          href={`https://gesetze-scanner.onrender.com?checkout=${encodeURIComponent(selectedPlan || "allgemein_annual")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-all shadow cursor-pointer mt-1"
+                        >
+                          <span>Auf gesetze-scanner.onrender.com öffnen</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
 
                     {/* Validation Error Banner */}
                     {paymentValidationError && (

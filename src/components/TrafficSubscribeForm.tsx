@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Car, Bike, Truck, Footprints, Zap, Sliders, CheckCircle2, AlertCircle } from 'lucide-react';
 import { VehicleType, TrafficUser } from '../types';
-import { openPaddleCheckout } from '../lib/paddle';
+import { openPaddleCheckout, formatPaddleError } from '../lib/paddle';
 
 interface TrafficSubscribeFormProps {
   currentUser: TrafficUser | null;
@@ -97,7 +97,7 @@ export default function TrafficSubscribeForm({ currentUser, onRegisterSuccess, i
         setIsLoading(false);
         setMessage({
           type: 'error',
-          text: 'Paddle Checkout Fehler: ' + (err?.message || 'Zahlungsvorgang abgebrochen oder ungültig.')
+          text: 'Paddle Checkout Fehler: ' + formatPaddleError(err)
         });
       }
     });

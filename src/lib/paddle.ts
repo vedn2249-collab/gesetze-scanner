@@ -123,16 +123,75 @@ export async function initializePaddle(): Promise<boolean> {
 export interface OpenPaddleCheckoutOptions {
   planType: string;
   email?: string;
+  discountCode?: string;
   onSuccess?: (data: any) => void;
   onClose?: () => void;
   onError?: (error: any) => void;
 }
 
 /**
+ * Wandelt Paddle-Fehlerobjekte in präzise, verständliche Klartext-Meldungen um
+ */
+export function formatPaddleError(err: any): string {
+  if (!err) return "Checkout abgebrochen oder von Paddle abgewiesen.";
+  if (typeof err === "string") return err;
+
+  const code = (err.code || err.type || "").toString().toLowerCase();
+  const detail = (err.detail || err.message || "").toString();
+
+  // 1. Häufigster Live-Fehler: Domain ist im Paddle Dashboard noch nicht freigeschaltet
+  if (
+    code.includes("domain") ||
+    detail.toLowerCase().includes("domain") ||
+    detail.toLowerCase().includes("origin") ||
+    code === "domain_not_approved" ||
+    code === "unapproved_domain"
+  ) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `[Domain nicht autorisiert] Paddle LIVE blockiert Checkouts von dieser Domain (${origin}). In Live-Accounts müssen Sie die Domain im Paddle Dashboard unter „Developer Tools > Authentication > Approved Domains“ eintragen oder den Checkout auf Ihrer echten Domain testen.`;
+  }
+
+  // 2. Client-Token ungültig / falsch
+  if (code.includes("token") || code.includes("auth") || detail.toLowerCase().includes("token")) {
+    return `[Paddle Client-Token Fehler] Der Client-Token (${PADDLE_CLIENT_TOKEN?.substring(0, 10)}...) wurde von Paddle abgewiesen. Prüfen Sie „Developer Tools > Authentication > Client-side tokens“ in Ihrem Live-Dashboard.`;
+  }
+
+  // 3. Price-ID existiert nicht im Live-Account
+  if (code.includes("price") || code.includes("item") || detail.toLowerCase().includes("price")) {
+    return `[Preis-ID nicht gefunden] Die Preis-ID existiert nicht im Live-Produktkatalog von Paddle. Prüfen Sie „Catalog > Prices“ im Paddle Dashboard.`;
+  }
+
+  // 4. Paddle-Account noch in Überprüfung (Compliance/Verifizierung)
+  if (code.includes("verification") || detail.toLowerCase().includes("verification") || detail.toLowerCase().includes("under review")) {
+    return `[Live-Account Verifizierung ausstehend] Ihr Paddle Live-Account wurde von Paddle noch nicht vollständig freigeschaltet (Prüfung unter Paddle Dashboard > Verification nötig).`;
+  }
+
+  // 5. Explizites Detail oder Message
+  if (detail) {
+    return code ? `[${code}] ${detail}` : detail;
+  }
+
+  if (code) {
+    return `Paddle Fehler-Code: ${code}`;
+  }
+
+  if (Array.isArray(err.errors) && err.errors.length > 0) {
+    return err.errors.map((e: any) => e.detail || e.message || JSON.stringify(e)).join("; ");
+  }
+
+  try {
+    const raw = JSON.stringify(err);
+    if (raw && raw !== "{}") return `Paddle Fehler: ${raw}`;
+  } catch {}
+
+  return "Checkout abgebrochen oder ungültig.";
+}
+
+/**
  * Öffnet das echte Paddle Checkout Overlay
  */
 export async function openPaddleCheckout(options: OpenPaddleCheckoutOptions): Promise<void> {
-  const { planType, email, onSuccess, onClose, onError } = options;
+  const { planType, email, discountCode, onSuccess, onClose, onError } = options;
 
   const initialized = await initializePaddle();
   if (!initialized || !window.Paddle) {
@@ -160,6 +219,7 @@ export async function openPaddleCheckout(options: OpenPaddleCheckoutOptions): Pr
       eventListeners.delete(handleEvent);
       if (onClose) onClose();
     } else if (event.name === "checkout.error") {
+      console.error("[Paddle Checkout Error Event]", event.data);
       if (onError) onError(event.data);
     }
   };
@@ -167,8 +227,9 @@ export async function openPaddleCheckout(options: OpenPaddleCheckoutOptions): Pr
   eventListeners.add(handleEvent);
 
   try {
-    console.log("Öffne Paddle Checkout Overlay für Price-ID:", priceId, "Kunde:", email);
-    window.Paddle.Checkout.open({
+    console.log("Öffne Paddle Checkout Overlay für Price-ID:", priceId, "Kunde:", email, "Rabattcode:", discountCode);
+    
+    const checkoutConfig: any = {
       items: [
         {
           priceId: priceId,
@@ -180,9 +241,22 @@ export async function openPaddleCheckout(options: OpenPaddleCheckoutOptions): Pr
         displayMode: "overlay",
         theme: "dark",
         locale: "de",
+        allowLogout: true,
         successUrl: `${window.location.origin}?payment_success=true&plan=${encodeURIComponent(planType)}`,
       },
-    });
+    };
+
+    // 100% Test-Rabattcode oder Discount-ID übergeben, falls angegeben
+    if (discountCode && discountCode.trim()) {
+      const trimmedCode = discountCode.trim();
+      if (trimmedCode.startsWith("dsc_")) {
+        checkoutConfig.discountId = trimmedCode;
+      } else {
+        checkoutConfig.discountCode = trimmedCode;
+      }
+    }
+
+    window.Paddle.Checkout.open(checkoutConfig);
   } catch (err) {
     eventListeners.delete(handleEvent);
     console.error("Fehler beim Öffnen des Paddle Checkouts:", err);
