@@ -19,9 +19,9 @@ export const PADDLE_CLIENT_TOKEN =
 // Beginnt mit "pri_..."
 export const PADDLE_PRICE_IDS: Record<string, string> = {
   // Gesetzes-Scanner Hauptbereich
-  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01kzztqb7j4hmymt9ar5pq8ejz",
+  allgemein_annual: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
   allgemein_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
-  gesetze_yearly: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01kzztqb7j4hmymt9ar5pq8ejz",
+  gesetze_yearly: metaEnv.VITE_PADDLE_PRICE_GESETZE_YEARLY || "pri_01m43kqve0zbkag8gj4y7ewbgy",
   gesetze_lifetime: metaEnv.VITE_PADDLE_PRICE_GESETZE_LIFETIME || "pri_01kzztzw480j8y5hpf9j5vrjce",
 
   // StVO-Verkehrsmittel-Scanner
@@ -78,8 +78,20 @@ export async function initializePaddle(): Promise<boolean> {
 
   if (!isPaddleInitialized) {
     try {
-      // 1. Sandbox Testumgebung aktivieren
-      window.Paddle.Environment.set("sandbox");
+      // 1. Umgebung automatisch an Hand des Tokens und der Konfiguration ermitteln
+      const isLiveToken = PADDLE_CLIENT_TOKEN.startsWith("live_");
+      const isExplicitLive = metaEnv.VITE_PADDLE_ENVIRONMENT === "live" || metaEnv.VITE_PADDLE_ENVIRONMENT === "production";
+      const isLive = isLiveToken || isExplicitLive;
+
+      if (isLive) {
+        // Live Production Modus (für echte Transaktionen & Live-Konto)
+        window.Paddle.Environment.set("production");
+        console.log("Paddle.js LIVE PRODUCTION Modus aktiviert.");
+      } else {
+        // Sandbox Testumgebung
+        window.Paddle.Environment.set("sandbox");
+        console.log("Paddle.js SANDBOX Testmodus aktiviert.");
+      }
 
       // 2. Mit Client Token initialisieren
       window.Paddle.Initialize({
@@ -97,7 +109,10 @@ export async function initializePaddle(): Promise<boolean> {
       });
 
       isPaddleInitialized = true;
-      console.log("Paddle.js Sandbox erfolgreich initialisiert mit Token:", PADDLE_CLIENT_TOKEN.substring(0, 8) + "...");
+      console.log(
+        `Paddle.js erfolgreich initialisiert im ${isLive ? "LIVE" : "SANDBOX"} Modus mit Token:`,
+        PADDLE_CLIENT_TOKEN.substring(0, 8) + "..."
+      );
     } catch (e) {
       console.error("Fehler bei Paddle.Initialize:", e);
       return false;

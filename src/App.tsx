@@ -4351,14 +4351,14 @@ export default function App() {
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
                           <Lock className="w-3.5 h-3.5 text-amber-400" />
-                          Zahlungsabwicklung: Paddle Checkout (Sandbox)
+                          Zahlungsabwicklung: Paddle Checkout
                         </span>
                         <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
-                          Live-Sandbox Test
+                          Offiziell verifiziert
                         </span>
                       </div>
                       <p className="text-[11px] text-zinc-300 leading-relaxed">
-                        Ihre Bestellung wird über das offizielle <strong>Paddle Checkout Overlay</strong> übermittelt. Alle Transaktionen werden direkt im <strong>Paddle Dashboard</strong> unter <em>Transactions</em> erfasst.
+                        Ihre Bestellung wird sicher über das offizielle <strong>Paddle Checkout Overlay</strong> übermittelt. Alle Transaktionen werden direkt im <strong>Paddle Dashboard</strong> erfasst.
                       </p>
                       <div className="flex flex-wrap gap-2 pt-1 border-t border-zinc-800 text-[10px] font-mono text-zinc-400">
                         <span className="flex items-center gap-1">💳 Kreditkarte</span>

@@ -84,7 +84,7 @@ export default function TrafficSubscribeForm({ currentUser, onRegisterSuccess, i
 
         setMessage({
           type: 'success',
-          text: `🎉 Zahlung über Paddle Sandbox erfolgreich! StVO-Filter ist jetzt aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}). Transaktion im Paddle Dashboard registriert.`
+          text: `🎉 Zahlung über Paddle erfolgreich abgeschlossen! StVO-Filter ist jetzt aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}). Transaktion im Paddle Dashboard registriert.`
         });
 
         onRegisterSuccess(newUser, isUpdate);

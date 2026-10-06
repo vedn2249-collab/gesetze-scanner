@@ -1794,7 +1794,7 @@ app.post("/api/create-checkout-session", async (req, res) => {
   };
 
   const defaultPaddlePrices: Record<string, string> = {
-    PADDLE_PRICE_GESETZE_YEARLY: "pri_01kzztqb7j4hmymt9ar5pq8ejz",
+    PADDLE_PRICE_GESETZE_YEARLY: "pri_01m43kqve0zbkag8gj4y7ewbgy",
     PADDLE_PRICE_GESETZE_LIFETIME: "pri_01kzztzw480j8y5hpf9j5vrjce",
     PADDLE_PRICE_TRAFFIC_YEARLY: "pri_01kzzv93jdap172qte544rx8rh",
     PADDLE_PRICE_TRAFFIC_LIFETIME: "pri_01kzzvcsrtdrvp4qca01fq75kx",
@@ -1812,7 +1812,7 @@ app.post("/api/create-checkout-session", async (req, res) => {
 
   if (paddleApiKey) {
     try {
-      const isSandbox = process.env.PADDLE_ENVIRONMENT === "sandbox";
+      const isSandbox = process.env.PADDLE_ENVIRONMENT === "sandbox" || paddleApiKey.startsWith("test_") || paddleApiKey.startsWith("pdl_test_");
       const paddleApiUrl = isSandbox
         ? "https://sandbox-api.paddle.com/transactions"
         : "https://api.paddle.com/transactions";
