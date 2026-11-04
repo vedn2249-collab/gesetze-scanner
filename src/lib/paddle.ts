@@ -124,6 +124,7 @@ export interface OpenPaddleCheckoutOptions {
   planType: string;
   email?: string;
   discountCode?: string;
+  customData?: Record<string, any>;
   onSuccess?: (data: any) => void;
   onClose?: () => void;
   onError?: (error: any) => void;
@@ -254,6 +255,11 @@ export async function openPaddleCheckout(options: OpenPaddleCheckoutOptions): Pr
       } else {
         checkoutConfig.discountCode = trimmedCode;
       }
+    }
+
+    // Custom Data / Custom Fields für Widerrufszustimmung (§ 356 Abs. 5 BGB)
+    if (options.customData) {
+      checkoutConfig.customData = options.customData;
     }
 
     window.Paddle.Checkout.open(checkoutConfig);

@@ -32,6 +32,34 @@
         }
       },
       "required": ["email"]
+    },
+    "widerrufe": {
+      "title": "widerrufe",
+      "description": "Elektronischer Widerruf nach § 356a BGB n.F.",
+      "properties": {
+        "id": { "type": "string", "description": "Eindeutige Widerrufs-ID" },
+        "createdAt": { "type": "string", "description": "Eingangszeitpunkt" },
+        "name": { "type": "string", "description": "Vollstaendiger Name des Kunden" },
+        "email": { "type": "string", "description": "E-Mail-Adresse des Kunden" },
+        "transactionId": { "type": "string", "description": "Bestell- oder Transaktions-ID" },
+        "reason": { "type": "string", "description": "Optionaler Grund des Widerrufs" },
+        "status": { "type": "string", "description": "Bearbeitungsstatus" }
+      },
+      "required": ["name", "email", "transactionId"]
+    },
+    "widerruf_consent": {
+      "title": "widerruf_consent",
+      "description": "Zustimmung zum vorzeitigen Erloeschen des Widerrufsrechts nach § 356 Abs. 5 BGB",
+      "properties": {
+        "id": { "type": "string", "description": "Consent ID" },
+        "transactionId": { "type": "string", "description": "Paddle Transaction ID" },
+        "consentedAt": { "type": "string", "description": "Zeitpunkt der Zustimmung" },
+        "ipHash": { "type": "string", "description": "Anonymisierter IP-Hash zur Nachweisbarkeit" },
+        "email": { "type": "string", "description": "E-Mail des Kaeufers" },
+        "consentEarlyExecution": { "type": "boolean", "description": "Zustimmung zu sofortiger Ausfuehrung" },
+        "consentLossOfWithdrawal": { "type": "boolean", "description": "Kenntnisnahme des Erloeschens" }
+      },
+      "required": ["transactionId", "consentedAt", "ipHash"]
     }
   }
 }

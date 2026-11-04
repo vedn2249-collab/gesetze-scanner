@@ -81,6 +81,8 @@ import StarryBackground from "./components/StarryBackground";
 import AmbientSpotlight from "./components/AmbientSpotlight";
 import LiveRadarTicker from "./components/LiveRadarTicker";
 import { openPaddleCheckout, formatPaddleError } from "./lib/paddle";
+import { Widerruf } from "./pages/Widerruf";
+import { saveWiderrufConsent, sendPostPaymentWithdrawalExpiryNotice } from "./services/widerrufService";
 
 // Interactive preset legal cases for fast scanning
 const PRESET_CASES: LegalCategory[] = [
@@ -186,7 +188,7 @@ const PRESET_CASES: LegalCategory[] = [
     description: "Abmahnschreiben einer Kanzlei über 1.200 € Schadensersatz wegen angeblichem Filesharing / Torrent.",
     icon: "Lock",
     exampleText: "Ich habe eine kostenpflichtige Abmahnung einer Rechtsanwaltskanzlei über 1.200 € erhalten. Mir wird vorgeworfen, über meinen Internetanschluss einen aktuellen Kinofilm per Torrent geteilt zu haben. Ich war zu dem Zeitpunkt im Urlaub, aber andere Familienmitglieder hatten Zugriff auf das WLAN. Soll ich die vorgefertigte Unterlassungserklärung unterschreiben?",
-    relevantParagraphs: ["§ 97a UrhG", "§ 97 UrhG", "§ 8 Abs. 1 TMG"],
+    relevantParagraphs: ["§ 97a UrhG", "§ 97 UrhG", "§ 8 Abs. 1 DDG"],
   },
   {
     id: "case-14",
@@ -659,6 +661,9 @@ export default function App() {
   const [paymentCardCvc, setPaymentCardCvc] = useState("");
   const [paymentIban, setPaymentIban] = useState("");
   const [paymentAgreedTerms, setPaymentAgreedTerms] = useState(false);
+  // Gesetzliche Pflicht-Checkboxen nach § 356 Abs. 5 BGB
+  const [consentEarlyExecution, setConsentEarlyExecution] = useState(false);
+  const [consentLossOfWithdrawal, setConsentLossOfWithdrawal] = useState(false);
   const [paymentDiscountCode, setPaymentDiscountCode] = useState("");
   const [paymentValidationError, setPaymentValidationError] = useState<string | null>(null);
   const [paymentTransactionId, setPaymentTransactionId] = useState<string>("");
@@ -754,6 +759,8 @@ export default function App() {
         setShowImpressumModal(true);
       } else if (path === "/datenschutz" || path === "/privacy" || hash === "#datenschutz" || hash === "#privacy") {
         setShowDatenschutzModal(true);
+      } else if (path === "/widerruf" || hash === "#widerruf") {
+        setShowWiderrufModal(true);
       }
     };
 
@@ -963,11 +970,12 @@ export default function App() {
   const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
   const [copiedTemplateId, setCopiedTemplateId] = useState<string | null>(null);
 
-  // Impressum, Datenschutz, AGB / Terms & Rückerstattung / Refunds modal states
+  // Impressum, Datenschutz, AGB / Terms, Rückerstattung & Widerruf (§ 356a BGB) modal states
   const [showImpressumModal, setShowImpressumModal] = useState(false);
   const [showDatenschutzModal, setShowDatenschutzModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showRefundsModal, setShowRefundsModal] = useState(false);
+  const [showWiderrufModal, setShowWiderrufModal] = useState(false);
   const [showNotificationSettingsModal, setShowNotificationSettingsModal] = useState(false);
   const [showDeadlineCalculatorModal, setShowDeadlineCalculatorModal] = useState(false);
 
@@ -1320,6 +1328,9 @@ export default function App() {
     setShowPaymentModal(true);
     setPaymentSuccess(false);
     setPaymentValidationError(null);
+    setConsentEarlyExecution(false);
+    setConsentLossOfWithdrawal(false);
+    setPaymentAgreedTerms(false);
   };
 
   const processPayment = async () => {
@@ -1331,24 +1342,72 @@ export default function App() {
       return;
     }
 
+    // Gesetzliche Pflicht nach § 356 Abs. 5 BGB: Beide Checkboxen müssen aktiv bestätigt sein
+    if (!consentEarlyExecution || !consentLossOfWithdrawal) {
+      setPaymentValidationError("Der Kauf kann erst gestartet werden, wenn Sie beiden Pflicht-Checkboxen zum vorzeitigen Erlöschen des Widerrufsrechts (§ 356 Abs. 5 BGB) zugestimmt haben.");
+      return;
+    }
+
     if (!paymentAgreedTerms) {
-      setPaymentValidationError("Sie müssen den Zahlungsbedingungen und der sofortigen Leistungsausführung zustimmen.");
+      setPaymentValidationError("Sie müssen den Allgemeinen Geschäftsbedingungen (AGB) zustimmen.");
       return;
     }
 
     setIsProcessingPayment(true);
     const planCode = selectedPlan || "allgemein_annual";
+    const pendingConsentTxnId = `GS-TX-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
-    // Echtes Paddle Checkout Overlay öffnen (Live/Sandbox)
+    // Serverseitige Protokollierung der Zustimmung VOR dem Checkout-Start
+    try {
+      await saveWiderrufConsent({
+        transaction_id: pendingConsentTxnId,
+        email: paymentEmail.trim(),
+        consent_early_execution: true,
+        consent_loss_of_withdrawal: true
+      });
+    } catch (e) {
+      console.warn("Pre-checkout consent log warn:", e);
+    }
+
+    // Echtes Paddle Checkout Overlay öffnen (Live/Sandbox) mit Custom Data
     await openPaddleCheckout({
       planType: planCode,
       email: paymentEmail.trim(),
       discountCode: paymentDiscountCode.trim(),
+      customData: {
+        consent_early_execution: "true",
+        consent_loss_of_withdrawal: "true",
+        consented_at: new Date().toISOString(),
+        pending_consent_id: pendingConsentTxnId
+      },
       onSuccess: async (data: any) => {
         setIsProcessingPayment(false);
         setPaymentSuccess(true);
-        const txnId = data?.transaction_id || data?.id || `GS-PADDLE-${Date.now()}`;
+        const txnId = data?.transaction_id || data?.id || pendingConsentTxnId;
         setPaymentTransactionId(txnId);
+
+        // Serverseitige Speicherung der Zustimmung zusammen mit der endgültigen Transaction-ID
+        try {
+          await saveWiderrufConsent({
+            transaction_id: txnId,
+            email: paymentEmail.trim(),
+            consent_early_execution: true,
+            consent_loss_of_withdrawal: true
+          });
+        } catch (e) {
+          console.warn("Post-checkout consent log warn:", e);
+        }
+
+        // Nach erfolgreicher Zahlung: Bestätigungs-E-Mail an den Kunden über Widerrufsausschluss
+        try {
+          await sendPostPaymentWithdrawalExpiryNotice({
+            email: paymentEmail.trim(),
+            transaction_id: txnId,
+            productName: selectedPlan || "Gesetzes-Scanner"
+          });
+        } catch (e) {
+          console.warn("Expiry email dispatch warn:", e);
+        }
 
         // Auto create Firebase account if user entered a password during checkout and isn't logged in
         if (!auth.currentUser && paymentEmail && paymentPassword && paymentPassword.length >= 6) {
@@ -4085,6 +4144,16 @@ export default function App() {
           >
             Rückerstattungsrichtlinie (Refund Policy)
           </a>
+          <span className="text-zinc-800 hidden sm:inline">|</span>
+          <button
+            type="button"
+            onClick={() => { setShowWiderrufModal(true); window.history.pushState({}, '', '/widerruf'); }}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/40 transition-all font-bold text-[11px] cursor-pointer inline-flex items-center gap-1.5 shadow-sm"
+            aria-label="Vertrag widerrufen"
+          >
+            <RotateCcw className="w-3 h-3 text-amber-400" />
+            <span>Vertrag widerrufen</span>
+          </button>
         </nav>
         <p className="text-[10px] text-zinc-600 mt-4 font-mono">
           System-Status: Aktiv • Verschlüsselung: AES-256 • IP-Logging: Deaktiviert
@@ -4450,33 +4519,85 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Terms Checkbox */}
-                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/80 cursor-pointer" onClick={() => setPaymentAgreedTerms(!paymentAgreedTerms)}>
-                      <input
-                        type="checkbox"
-                        checked={paymentAgreedTerms}
-                        onChange={(e) => setPaymentAgreedTerms(e.target.checked)}
-                        className="mt-0.5 accent-amber-400 w-4 h-4 cursor-pointer shrink-0"
-                      />
-                      <p className="text-[10px] text-zinc-300 leading-normal select-none">
-                        Ich stimme ausdrücklich zu, dass Sie vor Ablauf der Widerrufsfrist mit der Ausführung des Vertrags beginnen. Ich akzeptiere die{" "}
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
-                          className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
-                        >
-                          AGB
-                        </button>{" "}
-                        sowie die{" "}
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.stopPropagation(); setShowRefundsModal(true); }}
-                          className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
-                        >
-                          Rückerstattungsrichtlinie
-                        </button>{" "}
-                        und verlange und bestätige die kostenpflichtige Bestellung ({selectedPlan?.includes("annual") || selectedPlan === "annual" ? "4,99 €/Jahr mit 12 Monaten Mindestlaufzeit" : selectedPlan?.includes("lifetime") || selectedPlan === "lifetime" ? "19,99 € einmalig" : "9,99 € pro Schriftsatz-Erstellung"}).
-                      </p>
+                    {/* Gesetzliche Pflicht-Checkboxen nach § 356 Abs. 5 BGB */}
+                    <div className="space-y-2.5 p-3.5 rounded-2xl bg-zinc-900/60 border border-amber-500/30">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wide">
+                          Gesetzliche Pflicht-Zustimmungen (§ 356 Abs. 5 BGB)
+                        </span>
+                      </div>
+
+                      {/* Checkbox 1 (Pflicht) */}
+                      <label 
+                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          consentEarlyExecution ? "bg-amber-500/10 border-amber-400/50 text-white" : "bg-black/60 border-zinc-800 text-zinc-300 hover:border-zinc-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          required
+                          checked={consentEarlyExecution}
+                          onChange={(e) => setConsentEarlyExecution(e.target.checked)}
+                          className="mt-0.5 accent-amber-400 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[10.5px] leading-relaxed select-none">
+                          <strong className="text-amber-400 font-bold block sm:inline mr-1">[Pflicht] Checkbox 1:</strong>
+                          Ich stimme ausdrücklich zu, dass die digitale Leistung (Dokumentenanalyse) vor Ablauf der 14-tägigen Widerrufsfrist beginnt.
+                        </span>
+                      </label>
+
+                      {/* Checkbox 2 (Pflicht) */}
+                      <label 
+                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          consentLossOfWithdrawal ? "bg-amber-500/10 border-amber-400/50 text-white" : "bg-black/60 border-zinc-800 text-zinc-300 hover:border-zinc-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          required
+                          checked={consentLossOfWithdrawal}
+                          onChange={(e) => setConsentLossOfWithdrawal(e.target.checked)}
+                          className="mt-0.5 accent-amber-400 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[10.5px] leading-relaxed select-none">
+                          <strong className="text-amber-400 font-bold block sm:inline mr-1">[Pflicht] Checkbox 2:</strong>
+                          Ich habe zur Kenntnis genommen, dass mein Widerrufsrecht mit Beginn der Ausführung erlischt (§ 356 Abs. 5 BGB).
+                        </span>
+                      </label>
+
+                      {/* Checkbox 3: AGB & Nutzungsbedingungen */}
+                      <label 
+                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          paymentAgreedTerms ? "bg-zinc-800/60 border-zinc-700 text-white" : "bg-black/60 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={paymentAgreedTerms}
+                          onChange={(e) => setPaymentAgreedTerms(e.target.checked)}
+                          className="mt-0.5 accent-amber-400 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[10px] leading-normal select-none text-zinc-300">
+                          Ich akzeptiere die{" "}
+                          <button 
+                            type="button" 
+                            onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
+                            className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                          >
+                            AGB
+                          </button>{" "}
+                          sowie die{" "}
+                          <button 
+                            type="button" 
+                            onClick={(e) => { e.stopPropagation(); setShowRefundsModal(true); }}
+                            className="text-amber-400 underline hover:text-amber-300 font-medium cursor-pointer"
+                          >
+                            Rückerstattungsrichtlinie
+                          </button>{" "}
+                          und bestätige die kostenpflichtige Bestellung.
+                        </span>
+                      </label>
                     </div>
 
                     {/* Hinweis bei Aufruf außerhalb der genehmigten Render-Domain */}
@@ -4514,8 +4635,12 @@ export default function App() {
                       <button
                         type="button"
                         onClick={processPayment}
-                        disabled={isProcessingPayment}
-                        className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-display font-extrabold text-xs uppercase py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                        disabled={isProcessingPayment || !consentEarlyExecution || !consentLossOfWithdrawal}
+                        className={`w-full font-display font-extrabold text-xs uppercase py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                          !consentEarlyExecution || !consentLossOfWithdrawal
+                            ? "bg-zinc-800/80 text-zinc-500 border border-zinc-700/60 cursor-not-allowed opacity-60 shadow-none"
+                            : "bg-gradient-to-r from-amber-500 to-yellow-400 text-black hover:brightness-110 active:scale-[0.98] cursor-pointer shadow-md"
+                        }`}
                       >
                         {isProcessingPayment ? (
                           <>
@@ -4528,6 +4653,12 @@ export default function App() {
                           </span>
                         )}
                       </button>
+
+                      {(!consentEarlyExecution || !consentLossOfWithdrawal) && (
+                        <p className="text-[10px] text-amber-400/90 text-center font-mono py-0.5">
+                          ⚠️ Kauf ist gesperrt: Bitte beide Pflicht-Checkboxen zum Widerrufsverzicht aktivieren.
+                        </p>
+                      )}
                       
                       <button
                         type="button"
@@ -4604,7 +4735,7 @@ export default function App() {
 
               <div className="space-y-4 text-xs text-zinc-300 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
                 <div>
-                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">Angaben gemäß § 5 TMG / Verantwortlich für den Inhalt</h4>
+                  <h4 className="font-bold text-white uppercase text-[10px] tracking-widest text-amber-400 font-mono">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz) / Verantwortlich für den Inhalt</h4>
                   <p className="mt-1 font-bold text-white">Vedat Kurt</p>
                   <p>SİDE MAH. 1549_1 SK. ASIM BEY APT. 2 SİTESİ NO: 14 İÇ KAPI NO: 8</p>
                   <p>MANAVGAT / ANTALYA</p>
@@ -4884,6 +5015,21 @@ export default function App() {
         isOpen={showDeadlineCalculatorModal}
         onClose={() => setShowDeadlineCalculatorModal(false)}
       />
+
+      {/* Elektronisches Widerrufsformular nach § 356a BGB n.F. */}
+      {showWiderrufModal && (
+        <Widerruf
+          isModal={true}
+          initialTransactionId={paymentTransactionId || ""}
+          initialEmail={currentUser?.email || paymentEmail || ""}
+          onClose={() => {
+            setShowWiderrufModal(false);
+            if (window.location.pathname === "/widerruf" || window.location.hash === "#widerruf") {
+              window.history.pushState({}, "", "/");
+            }
+          }}
+        />
+      )}
       </div>
     </div>
   );
