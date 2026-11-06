@@ -12,7 +12,7 @@ const metaEnv = typeof import.meta !== "undefined" ? (import.meta as any).env ||
 // Beginnt im Sandbox-Modus mit "test_..."
 export const PADDLE_CLIENT_TOKEN =
   metaEnv.VITE_PADDLE_CLIENT_TOKEN ||
-  "live_2125f462f48e3cfcbcf0cae3ee6"; // <--- HIER DEIN test_... PADDLE CLIENT-TOKEN EINTRAGEN
+  "live_c1876acaeea583c2e169cd130dc";
 
 // 2. PADDLE PRICE-IDs (SANDBOX)
 // Aus dem Paddle Dashboard: Catalog > Prices
