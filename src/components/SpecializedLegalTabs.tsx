@@ -634,10 +634,66 @@ export function FileNavigatorView() {
   const [fileName, setFileName] = useState('');
   const [category, setCategory] = useState<'VORVERFAHREN' | 'SCHRIFTSAETZE' | 'BEWEISMITTEL'>('VORVERFAHREN');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
 
-  const saveFiles = (updated: UserCaseFile[]) => {
+  const getUserEmail = () => {
+    try {
+      const sess = localStorage.getItem('gs_auth_session');
+      if (sess) {
+        const parsed = JSON.parse(sess);
+        if (parsed?.email) return parsed.email;
+      }
+      return localStorage.getItem('gs_user_notification_email') || 'nutzer@gesetze-scanner.de';
+    } catch {
+      return 'nutzer@gesetze-scanner.de';
+    }
+  };
+
+  // Load files from Firestore on mount
+  useEffect(() => {
+    const loadCloudFiles = async () => {
+      const email = getUserEmail();
+      try {
+        const res = await fetch(`/api/user-files?email=${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+            setFiles(prev => {
+              const ids = new Set(data.files.map((f: any) => f.id));
+              const merged = [...data.files, ...prev.filter(f => !ids.has(f.id))];
+              localStorage.setItem('gs_user_case_files', JSON.stringify(merged));
+              return merged;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch case files from Firestore:", err);
+      }
+    };
+    loadCloudFiles();
+  }, []);
+
+  const saveFiles = async (updated: UserCaseFile[], newFile?: UserCaseFile) => {
     setFiles(updated);
     localStorage.setItem('gs_user_case_files', JSON.stringify(updated));
+
+    if (newFile) {
+      setIsCloudSyncing(true);
+      try {
+        await fetch('/api/user-files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...newFile,
+            userEmail: getUserEmail()
+          })
+        });
+      } catch (e) {
+        console.warn("Cloud file save error:", e);
+      } finally {
+        setIsCloudSyncing(false);
+      }
+    }
   };
 
   const handleAddManual = () => {
@@ -646,9 +702,10 @@ export function FileNavigatorView() {
       id: `doc-${Date.now()}`,
       name: fileName.trim(),
       category,
-      date: new Date().toLocaleDateString('de-DE')
+      date: new Date().toLocaleDateString('de-DE'),
+      size: '15.0 KB'
     };
-    saveFiles([newDoc, ...files]);
+    saveFiles([newDoc, ...files], newDoc);
     setFileName('');
   };
 
@@ -658,20 +715,28 @@ export function FileNavigatorView() {
     const newItems: UserCaseFile[] = [];
     for (let i = 0; i < uploaded.length; i++) {
       const f = uploaded[i];
-      newItems.push({
+      const item: UserCaseFile = {
         id: `doc-${Date.now()}-${i}`,
         name: f.name,
         category,
         date: new Date().toLocaleDateString('de-DE'),
         size: `${(f.size / 1024).toFixed(1)} KB`
-      });
+      };
+      newItems.push(item);
+      saveFiles([item, ...files], item);
     }
-    saveFiles([...newItems, ...files]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     saveFiles(files.filter(f => f.id !== id));
+    try {
+      await fetch(`/api/user-files?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+    } catch (e) {
+      console.warn("Cloud file delete error:", e);
+    }
   };
 
   const vorverfahren = files.filter(f => f.category === 'VORVERFAHREN');

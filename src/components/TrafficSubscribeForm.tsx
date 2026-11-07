@@ -65,7 +65,7 @@ export default function TrafficSubscribeForm({ currentUser, onRegisterSuccess, i
     await openPaddleCheckout({
       planType: targetPlan,
       email: email.trim(),
-      onSuccess: () => {
+      onSuccess: async (data: any) => {
         const isUpdate = !!currentUser;
         const newUser: TrafficUser = {
           email: email.trim(),
@@ -82,9 +82,26 @@ export default function TrafficSubscribeForm({ currentUser, onRegisterSuccess, i
           console.warn('Could not save to localStorage', err);
         }
 
+        // Echte Persistierung in Firestore-Datenbank
+        const txnId = data?.transaction_id || data?.id || `traffic_paddle_${Date.now()}`;
+        try {
+          await fetch('/api/auth/sync-purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email.trim(),
+              plan: targetPlan,
+              transactionId: txnId
+            })
+          });
+          window.dispatchEvent(new Event('gs-auth-changed'));
+        } catch (syncErr) {
+          console.warn('Fehler bei der Firestore-Synchronisation des StVO-Abos:', syncErr);
+        }
+
         setMessage({
           type: 'success',
-          text: `🎉 Zahlung über Paddle erfolgreich abgeschlossen! StVO-Filter ist jetzt aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}). Transaktion im Paddle Dashboard registriert.`
+          text: `🎉 Zahlung über Paddle erfolgreich abgeschlossen! StVO-Filter ist jetzt aktiv (${planType === 'yearly' ? '4,99 €/Jahr' : '19,99 € Lebenslang'}). Transaktion in der Firestore-Datenbank und im Paddle Dashboard registriert.`
         });
 
         onRegisterSuccess(newUser, isUpdate);

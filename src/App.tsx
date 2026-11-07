@@ -675,11 +675,53 @@ export default function App() {
   const [authModalNotice, setAuthModalNotice] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    const syncUserEntitlements = async (email: string) => {
+      try {
+        const res = await fetch(`/api/auth/user?email=${encodeURIComponent(email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            if (data.user.isPremiumUnlocked !== undefined) {
+              setIsPremiumUnlocked(data.user.isPremiumUnlocked);
+              localStorage.setItem("gs_premium_unlocked", data.user.isPremiumUnlocked ? "true" : "false");
+            }
+            if (data.user.isTrafficUnlocked !== undefined) {
+              setIsTrafficUnlocked(data.user.isTrafficUnlocked);
+              localStorage.setItem("gs_traffic_unlocked", data.user.isTrafficUnlocked ? "true" : "false");
+            }
+            if (data.user.schriftsatzCredits) {
+              setSchriftsatzCredits(data.user.schriftsatzCredits);
+              localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(data.user.schriftsatzCredits));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Backend user sync warn:", err);
+      }
+    };
+
+    const checkLocalSession = () => {
+      try {
+        const raw = localStorage.getItem("gs_auth_session");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.email) {
+            setCurrentUser(parsed);
+            setPaymentEmail(parsed.email);
+            syncUserEntitlements(parsed.email);
+          }
+        }
+      } catch (e) {}
+    };
+
+    checkLocalSession();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
       if (user) {
+        setCurrentUser(user);
         if (user.email) {
           setPaymentEmail(user.email);
+          syncUserEntitlements(user.email);
         }
         try {
           const userRef = doc(db, "users", user.uid);
@@ -698,30 +740,25 @@ export default function App() {
               setSchriftsatzCredits(data.schriftsatzCredits);
               localStorage.setItem("gs_schriftsatz_credits_map", JSON.stringify(data.schriftsatzCredits));
             }
-          } else {
-            // First time user doc creation
-            const localPremium = localStorage.getItem("gs_premium_unlocked") === "true";
-            const localTraffic = localStorage.getItem("gs_traffic_unlocked") === "true";
-            let localCredits = { berufung: 0, revision: 0, wiederaufnahme: 0, verfassungsbeschwerde: 0 };
-            try {
-              const rawCredits = localStorage.getItem("gs_schriftsatz_credits_map");
-              if (rawCredits) localCredits = JSON.parse(rawCredits);
-            } catch (e) {}
-
-            await setDoc(userRef, {
-              email: user.email,
-              createdAt: new Date().toISOString(),
-              isPremiumUnlocked: localPremium,
-              isTrafficUnlocked: localTraffic,
-              schriftsatzCredits: localCredits
-            });
           }
         } catch (err) {
           console.warn("Firestore sync error:", err);
         }
+      } else {
+        // Falls Firebase kein Nutzer hat, prüfe ob lokale Sitzung existiert
+        checkLocalSession();
       }
     });
-    return () => unsubscribe();
+
+    const handleAuthEvent = () => {
+      checkLocalSession();
+    };
+    window.addEventListener("gs-auth-changed", handleAuthEvent);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("gs-auth-changed", handleAuthEvent);
+    };
   }, []);
 
   // Check for URL hash, query params or path on load to directly open modals or handle checkout success
@@ -1409,12 +1446,50 @@ export default function App() {
           console.warn("Expiry email dispatch warn:", e);
         }
 
-        // Auto create Firebase account if user entered a password during checkout and isn't logged in
-        if (!auth.currentUser && paymentEmail && paymentPassword && paymentPassword.length >= 6) {
+        // Serverseitige Synchronisation & Kontenverknüpfung in Firestore & Disk
+        try {
+          await fetch("/api/auth/sync-purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: paymentEmail.trim(),
+              plan: selectedPlan,
+              transactionId: txnId
+            })
+          });
+        } catch (e) {
+          console.warn("Purchase sync to server warn:", e);
+        }
+
+        // Auto create account if user entered a password during checkout
+        if (paymentEmail && paymentPassword && paymentPassword.length >= 6) {
+          try {
+            const regRes = await fetch("/api/auth/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: paymentEmail.trim(),
+                password: paymentPassword,
+                initialState: {
+                  isPremiumUnlocked: selectedPlan === "allgemein_annual" || selectedPlan === "allgemein_lifetime",
+                  isTrafficUnlocked: selectedPlan === "traffic_annual" || selectedPlan === "traffic_lifetime",
+                  subscriptionPlan: selectedPlan
+                }
+              })
+            });
+            const regData = await regRes.json();
+            if (regData.user) {
+              localStorage.setItem("gs_auth_session", JSON.stringify(regData.user));
+              window.dispatchEvent(new Event("gs-auth-changed"));
+            }
+          } catch (e) {
+            console.warn("Auto server account registration warn:", e);
+          }
+
           try {
             await createUserWithEmailAndPassword(auth, paymentEmail.trim(), paymentPassword);
           } catch (e) {
-            console.warn("Auto account creation during checkout notice:", e);
+            // Ignorieren falls Email/Password in Firebase Console deaktiviert
           }
         }
 
@@ -1908,7 +1983,12 @@ export default function App() {
             {currentUser ? (
               <button
                 type="button"
-                onClick={() => signOut(auth)}
+                onClick={async () => {
+                  try { await signOut(auth); } catch {}
+                  localStorage.removeItem("gs_auth_session");
+                  setCurrentUser(null);
+                  window.dispatchEvent(new Event("gs-auth-changed"));
+                }}
                 className="text-[11px] font-mono text-zinc-400 hover:text-white px-2.5 py-1 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <LogOut className="w-3 h-3 text-red-400" />

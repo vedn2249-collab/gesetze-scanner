@@ -1,0 +1,20 @@
+{
+  "kunde@gesetze-test.de": {
+    "id": "usr_1793968628413_dxm8a",
+    "email": "kunde@gesetze-test.de",
+    "createdAt": "2026-11-06T12:37:08.413Z",
+    "updatedAt": "2026-11-06T12:37:18.736Z",
+    "isPremiumUnlocked": true,
+    "isTrafficUnlocked": true,
+    "schriftsatzCredits": {
+      "berufung": 0,
+      "revision": 1,
+      "wiederaufnahme": 0,
+      "verfassungsbeschwerde": 0
+    },
+    "passwordHash": "2325fbb9a44ab2b4b9e21da08c1b302d:6c11b44ddcc408102279b1aea5846e19eeb06329ae1867dc73618146680e3333f137912d72e760a678848d78829d644a68baf7af0490e3ad4f1f349ffc8f90a5",
+    "subscriptionPlan": "schriftsatz_revision",
+    "subscriptionStatus": "active",
+    "lastTransactionId": "txn_test_789"
+  }
+}

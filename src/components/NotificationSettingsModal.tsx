@@ -366,25 +366,25 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         })
       });
 
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         setTestEmailStatus({
           loading: false,
           success: true,
-          message: `✅ Test-Eilwarnung erfolgreich an ${emailAddress} übermittelt!`
+          message: data.message || `✅ Echte Test-Eilwarnung erfolgreich an ${emailAddress} übermittelt!`
         });
       } else {
-        // Fallback simulate ok
         setTestEmailStatus({
           loading: false,
-          success: true,
-          message: `✅ Test-Eilwarnung generiert und für ${emailAddress} vorbereitet!`
+          success: false,
+          message: `❌ Versand fehlgeschlagen: ${data.error || "Fehler beim E-Mail-Versand."}`
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       setTestEmailStatus({
         loading: false,
-        success: true,
-        message: `✅ Test-Eilwarnung erfolgreich für ${emailAddress} simuliert!`
+        success: false,
+        message: `❌ Verbindungsfehler: ${e?.message || "Konnte Server nicht erreichen."}`
       });
     }
 

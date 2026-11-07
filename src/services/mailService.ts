@@ -280,3 +280,69 @@ Ihr Gesetze-Scanner Team`,
     return false;
   }
 }
+
+/**
+ * Sendet eine echte E-Mail für die Test-Eilwarnung
+ */
+export async function dispatchTestAlertEmail(
+  recipientEmail: string,
+  alert: any
+): Promise<{ success: boolean; messageId?: string; previewUrl?: string; error?: string }> {
+  try {
+    const user = process.env.SMTP_USER || process.env.GMAIL_USER || "vedn2249@gmail.com";
+    const fromAddress = process.env.MAIL_FROM || `"Gesetze-Scanner Eilwarnung" <${user}>`;
+    const transporter = await getTransporter();
+
+    const emailSubject = `[EIL-WARNUNG] ${alert?.title || "BGH Urteil: Verschärfte Begründungspflicht bei Kündigungen (§ 573 BGB)"}`;
+    const emailBodyHtml = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #f4f4f5; padding: 24px; border-radius: 16px; border: 1px solid #27272a;">
+        <div style="border-bottom: 1px solid #27272a; padding-bottom: 16px; margin-bottom: 16px;">
+          <span style="background: #ef444420; color: #f87171; border: 1px solid #ef444450; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; text-transform: uppercase;">
+            🚨 EIL-WARNSTUFE ROT • BUNDESGERICHTSHOF
+          </span>
+          <h2 style="color: #ffffff; margin-top: 12px; font-size: 18px;">${alert?.title || "Rechtsprechungs-Änderung"}</h2>
+          <p style="color: #fbbf24; font-size: 13px; margin: 4px 0;">Rechtsgebiet: ${alert?.category || "Mietrecht"} | Norm: ${alert?.lawCode || "§ 573 BGB"}</p>
+        </div>
+        
+        <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6;">
+          <strong>Sehr geehrte(r) Abonnent(in),</strong><br/>
+          Unser 24/7 Gesetzes-Monitor hat soeben eine signifikante Änderung für Ihren gewählten Fachbereich registriert.
+        </p>
+
+        <div style="background: #18181b; border: 1px solid #3f3f46; border-radius: 12px; padding: 16px; margin: 16px 0;">
+          <p style="color: #e4e4e7; font-size: 13px; margin: 0 0 8px 0;"><strong>Zusammenfassung:</strong> ${alert?.summary || "Formvorschriften verschärft."}</p>
+          <p style="color: #fbbf24; font-size: 13px; margin: 0 0 8px 0;"><strong>Auswirkung:</strong> ${alert?.impactOnSubscribers || "Laufende Verfahren betroffen."}</p>
+          <p style="color: #34d399; font-size: 13px; margin: 0;"><strong>Handlungsempfehlung:</strong> ${alert?.recommendedAction || "Prüfung veranlassen."}</p>
+        </div>
+
+        <p style="color: #a1a1aa; font-size: 12px; border-top: 1px solid #27272a; padding-top: 12px;">
+          Sie erhalten diese Benachrichtigung auf Basis Ihrer individuellen Benachrichtigungs-Matrix für <em>${recipientEmail}</em>.
+        </p>
+      </div>
+    `;
+
+    const info = await transporter.sendMail({
+      from: fromAddress,
+      to: recipientEmail,
+      subject: emailSubject,
+      html: emailBodyHtml,
+      text: `${alert?.title || "Eilwarnung"}\n\n${alert?.summary || ""}\n\nHandlungsempfehlung: ${alert?.recommendedAction || ""}`
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`[MAIL SERVICE]: Test-Eilwarnung an ${recipientEmail} versendet. Message-ID: ${info.messageId}`);
+
+    return {
+      success: true,
+      messageId: info.messageId,
+      previewUrl: previewUrl ? previewUrl.toString() : undefined
+    };
+  } catch (error: any) {
+    console.error("[MAIL SERVICE]: Fehler beim Versenden der Test-Eilwarnung:", error);
+    return {
+      success: false,
+      error: error?.message || "E-Mail-Versand fehlgeschlagen"
+    };
+  }
+}
+

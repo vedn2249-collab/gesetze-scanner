@@ -365,6 +365,207 @@ export const VERIFIED_GERMAN_LAWS_DB: VerifiedLawNorm[] = [
     ],
     legalConsequence: "Einmalige Erteilung einer Aufenthaltserlaubnis für 18 Monate zur Identitätsklärung, Spracherwerb und Arbeitsaufnahme.",
     keywords: ["chancenaufenthaltsrecht", "chancen aufenthalt", "duldung", "bleiberecht", "104c aufenthg", "geduldet", "ausländerrecht"]
+  },
+  // ─── GRUNDGESETZ (GG) ──────────────────────────────────────────────────
+  {
+    code: "Art. 1 Abs. 1 GG",
+    book: "GG",
+    title: "Schutz der Menschenwürde",
+    officialUrl: "https://www.gesetze-im-internet.de/gg/art_1.html",
+    exactWording: "Die Würde des Menschen ist unantastbar. Sie zu achten und zu schützen ist Verpflichtung aller staatlichen Gewalt.",
+    elements: [
+      "Höchster Verfassungsgrundsatz der Bundesrepublik Deutschland",
+      "Unmittelbare Bindung aller drei Gewalten (Gesetzgebung, vollziehende Gewalt, Rechtsprechung)",
+      "Objektformel: Der Mensch darf niemals zum bloßen Objekt staatlichen Handelns degradiert werden"
+    ],
+    legalConsequence: "Verfassungswidrigkeit und Nichtigkeit jedes Gesetzes und Hoheitsaktes, der die Menschenwürde verletzt (nicht abänderbar gem. Art. 79 Abs. 3 GG).",
+    keywords: ["menschenwürde", "grundgesetz", "verfassung", "unantastbar", "grundrechte", "bundesverfassungsgericht"]
+  },
+  {
+    code: "Art. 2 Abs. 2 GG",
+    book: "GG",
+    title: "Recht auf Leben und körperliche Unversehrtheit / Freiheit der Person",
+    officialUrl: "https://www.gesetze-im-internet.de/gg/art_2.html",
+    exactWording: "Jeder hat das Recht auf Leben und körperliche Unversehrtheit. Die Freiheit der Person ist unverletzlich. In diese Rechte darf nur auf Grund eines Gesetzes eingegriffen werden.",
+    elements: [
+      "Schutz der physischen und psychischen Integrität des Menschen",
+      "Freiheitsentzug und Freiheitsbeschränkung nur unter strengem Gesetzesvorbehalt",
+      "Richtervorbehalt bei Freiheitsentziehungen (Art. 104 GG)"
+    ],
+    legalConsequence: "Hoheitliche Eingriffe bedürfen strikter gesetzlicher Ermächtigungsgrundlage und müssen dem Grundsatz der Verhältnismäßigkeit genügen.",
+    keywords: ["körperliche unversehrtheit", "leben", "freiheit", "polizeigewalt", "inhaftierung", "festnahme"]
+  },
+  {
+    code: "Art. 19 Abs. 4 GG",
+    book: "GG",
+    title: "Rechtsweggarantie / Effektiver Rechtsschutz",
+    officialUrl: "https://www.gesetze-im-internet.de/gg/art_19.html",
+    exactWording: "Wird jemand durch die öffentliche Gewalt in seinen Rechten verletzt, so steht ihm der Rechtsweg offen. Soweit eine andere Zuständigkeit nicht begründet ist, ist der ordentliche Rechtsweg gegeben.",
+    elements: [
+      "Eingriff durch die öffentliche Hand (Behörden, Polizei, Ministerien)",
+      "Mögliche Verletzung in eigenen subjektiv-öffentlichen Rechten",
+      "Recht auf ein unabhängiges, gesetzliches Richtergericht"
+    ],
+    legalConsequence: "Garantie eines fairen, wirksamen und zügigen Rechtsschutzverfahrens vor den Verwaltungs-, Finanz- oder Sozialgerichten.",
+    keywords: ["rechtsweg", "effektiver rechtsschutz", "behördenwillkür", "klagerecht", "justizgewährleistungsanspruch"]
+  },
+  // ─── STRASSENVERKEHRSRECHT (StVO & StVG) ────────────────────────────────
+  {
+    code: "§ 1 StVO",
+    book: "StVO",
+    title: "Grundregeln der Straßenverkehrs-Ordnung (Vorsicht & Rücksicht)",
+    officialUrl: "https://www.gesetze-im-internet.de/stvo_2013/__1.html",
+    exactWording: "Die Teilnahme am Straßenverkehr erfordert ständige Vorsicht und gegenseitige Rücksicht. Wer am Verkehr teilnimmt hat sich so zu verhalten, dass kein Anderer geschädigt, gefährdet oder mehr, als nach den Umständen unvermeidbar, behindert oder belästigt wird.",
+    elements: [
+      "Generalklausel für alle Verkehrsteilnehmer (Auto, Motorrad, Fahrrad, Fußgänger)",
+      "Vermeidung von vermeidbaren Gefährdungen oder Behinderungen",
+      "Erhöhte Sorgfaltspflicht gegenüber Kindern, Hilfsbedürftigen und älteren Menschen"
+    ],
+    legalConsequence: "Verstoß begründet Ordnungswidrigkeit gem. § 49 StVO und zivilrechtliche Haftung aus §§ 823 BGB, 7 StVG bei Unfällen.",
+    keywords: ["stvo", "verkehrsunfall", "rücksicht", "straßenverkehr", "unfallhaftung", "fahrtüchtigkeit"]
+  },
+  {
+    code: "§ 3 StVO",
+    book: "StVO",
+    title: "Geschwindigkeit & Sichtfahrgebot",
+    officialUrl: "https://www.gesetze-im-internet.de/stvo_2013/__3.html",
+    exactWording: "Wer ein Fahrzeug führt, darf nur so schnell fahren, dass das Fahrzeug ständig beherrscht wird. Die Geschwindigkeit ist insbesondere den Straßen-, Verkehrs-, Sicht- und Wetterverhältnissen sowie den persönlichen Fähigkeiten und den Eigenschaften von Fahrzeug und Ladung anzupassen.",
+    elements: [
+      "Fahren auf Sichtweite (Halbe Sichtweite bei schmalen Fahrbahnen)",
+      "Innerorts zulässige Höchstgeschwindigkeit 50 km/h für alle Kraftfahrzeuge",
+      "Außerorts grundsätzlich 100 km/h für Pkw, soweit nicht durch Verkehrszeichen abweichend geregelt"
+    ],
+    legalConsequence: "Bußgeld, Punkte in Flensburg (FAER) und bis zu 3 Monate Fahrverbot nach Bußgeldkatalog-Verordnung (BKatV).",
+    keywords: ["blitzer", "geschwindigkeitsüberschreitung", "tempolimit", "radar", "fahrverbot", "punkte flensburg"]
+  },
+  {
+    code: "§ 24a StVG",
+    book: "StVG",
+    title: "0,5-Promille-Grenze / Cannabis-Grenzwert im Straßenverkehr",
+    officialUrl: "https://www.gesetze-im-internet.de/stvg/__24a.html",
+    exactWording: "Ordnungswidrig handelt, wer im Straßenverkehr ein Kraftfahrzeug führt, obwohl er 0,25 mg/l oder mehr Alkohol in der Atemluft oder 0,5 Promille oder mehr Alkohol im Blut oder eine Substanz nach der Anlage (u.a. THC 3,5 ng/ml Blutserum) im Blut aufweist.",
+    elements: [
+      "Führen eines Kraftfahrzeugs im öffentlichen Straßenverkehr",
+      "Erreichen des Alkohol-Grenzwerts (0,5 Promille) oder THC-Werts (3,5 ng/ml Serum)",
+      "Sonderregel für Fahranfänger in der Probezeit und Personen unter 21 Jahren: 0,0 Promille (§ 24c StVG)"
+    ],
+    legalConsequence: "Bußgeld von 500 € bis 1.500 €, 2 Punkte in Flensburg, 1 bis 3 Monate Fahrverbot und behördliche Anordnung einer MPU (Medizinisch-Psychologische Untersuchung).",
+    keywords: ["alkohol am steuer", "promille", "cannabis am steuer", "thc grenzwert", "fahrverbot", "mpu", "führerschein"]
+  },
+  // ─── ZIVILRECHT & VERBRAUCHERSCHUTZ (BGB) ──────────────────────────────
+  {
+    code: "§ 312g BGB",
+    book: "BGB",
+    title: "Widerrufsrecht bei Fernabsatzverträgen und Verträgen außerhalb von Geschäftsräumen",
+    officialUrl: "https://www.gesetze-im-internet.de/bgb/__312g.html",
+    exactWording: "Dem Verbraucher steht bei außerhalb von Geschäftsräumen geschlossenen Verträgen und bei Fernabsatzverträgen ein Widerrufsrecht gemäß § 355 zu.",
+    elements: [
+      "Vertrag zwischen Verbraucher (§ 13 BGB) und Unternehmer (§ 14 BGB)",
+      "Verwendung von Fernkommunikationsmitteln (Internet, Telefon, Online-Shop)",
+      "Ausschlussgründe gem. § 312g Abs. 2 (z.B. versiegelte Waren, individuelle Anfertigungen, digitale Inhalte nach ausdrücklicher Vorabzustimmung)"
+    ],
+    legalConsequence: "Rückabwicklung des Vertrages: Vollständige Erstattung geleisteter Zahlungen binnen 14 Tagen nach Widerrufserklärung.",
+    keywords: ["widerrufsrecht", "widerruf", "fernabsatz", "onlinekauf", "312g bgb", "verbraucherschutz", "14 tage frist"]
+  },
+  {
+    code: "§ 437 BGB",
+    book: "BGB",
+    title: "Rechte des Käufers bei Mängeln (Gewährleistung)",
+    officialUrl: "https://www.gesetze-im-internet.de/bgb/__437.html",
+    exactWording: "Ist die Sache mangelhaft, kann der Käufer, wenn die Voraussetzungen der folgenden Vorschriften vorliegen und soweit nicht ein anderes bestimmt ist, 1. nach § 439 Nacherfüllung verlangen, 2. nach den §§ 440, 323 und 326 Abs. 5 von dem Vertrag zurücktreten oder nach § 441 den Kaufpreis mindern und 3. nach den §§ 440, 280, 281, 283 und 311a Schadensersatz oder nach § 284 Ersatz vergeblicher Aufwendungen verlangen.",
+    elements: [
+      "Vorliegen eines Sach- oder Rechtsmangels bei Gefahrübergang (§ 434 BGB)",
+      "Vorrang der Nacherfüllung (Reparatur oder Neulieferung nach Wahl des Käufers)",
+      "Beweislastumkehr zugunsten des Verbrauchers für 1 Jahr nach Kauf (§ 477 BGB)"
+    ],
+    legalConsequence: "Anspruch auf kostenfreie Reparatur/Ersatzlieferung, bei Fehlschlag Rücktritt (Geld zurück) oder Minderung des Kaufpreises.",
+    keywords: ["reklamation", "sachmangel", "gewährleistung", "nacherfüllung", "rücktritt kaufvertrag", "garantie"]
+  },
+  {
+    code: "§ 536 BGB",
+    book: "BGB",
+    title: "Mietminderung bei Sach- und Rechtsmängeln der Mietsache",
+    officialUrl: "https://www.gesetze-im-internet.de/bgb/__536.html",
+    exactWording: "Hat die Mietsache zur Zeit der Überlassung an den Mieter einen Mangel, der ihre Tauglichkeit zum vertragsgemäßen Gebrauch aufhebt, oder entsteht während der Mietzeit ein solcher Mangel, so ist der Mieter für die Zeit, in der die Tauglichkeit aufgehoben ist, von der Entrichtung der Miete befreit. Für die Zeit, während der die Tauglichkeit gemindert ist, hat er nur eine angemessen herabgesetzte Miete zu entrichten.",
+    elements: [
+      "Unerhebliche Mängel bleiben außer Betracht",
+      "Rechtzeitige Mängelanzeige an den Vermieter gem. § 536c BGB erforderlich",
+      "Keine vorsätzliche oder grob fahrlässige Verursachung durch den Mieter"
+    ],
+    legalConsequence: "Kraft Gesetzes eintretende Minderung der Bruttowarmmiete für die Dauer der Beeinträchtigung (z.B. Heizungsausfall, Schimmel, Lärm).",
+    keywords: ["mietminderung", "mietrecht", "schimmel", "heizungsausfall", "lärmbelästigung", "vermieter", "mietmangel"]
+  },
+  {
+    code: "§ 823 Abs. 1 BGB",
+    book: "BGB",
+    title: "Schadensersatzpflicht wegen unerlaubter Handlung (Deliktsrecht)",
+    officialUrl: "https://www.gesetze-im-internet.de/bgb/__823.html",
+    exactWording: "Wer vorsätzlich oder fahrlässig das Leben, den Körper, die Gesundheit, die Freiheit, das Eigentum oder ein sonstiges Recht eines anderen widerrechtlich verletzt, ist dem anderen zum Ersatz des daraus entstehenden Schadens verpflichtet.",
+    elements: [
+      "Verletzung eines absolut geschützten Rechtsguts (Leben, Körper, Gesundheit, Eigentum)",
+      "Vorsätzliches oder fahrlässiges (Außerachtlassung der im Verkehr erforderlichen Sorgfalt) Handeln",
+      "Kausalität zwischen Handlung und eingetretenem Schaden"
+    ],
+    legalConsequence: "Umfassender Schadensersatz nach § 249 BGB (Naturalrestitution) sowie Schmerzensgeld nach § 253 Abs. 2 BGB.",
+    keywords: ["schadensersatz", "schmerzensgeld", "sachbeschädigung", "fahrlässigkeit", "unerlaubte handlung", "haftpflicht"]
+  },
+  // ─── ARBEITSRECHT (KSchG & BGB) ────────────────────────────────────────
+  {
+    code: "§ 1 KSchG",
+    book: "KSchG",
+    title: "Sozial ungerechtfertigte Kündigungen / Kündigungsschutz",
+    officialUrl: "https://www.gesetze-im-internet.de/kschg/__1.html",
+    exactWording: "Die Kündigung des Arbeitsverhältnisses gegenüber einem Arbeitnehmer, dessen Arbeitsverhältnis in demselben Betrieb oder Unternehmen ohne Unterbrechung länger als sechs Monate bestanden hat, ist rechtsunwirksam, wenn sie sozial ungerechtfertigt ist.",
+    elements: [
+      "Wartezeit von mehr als 6 Monaten erfüllt",
+      "Anwendbarkeit des KSchG: Mehr als 10 Arbeitnehmer im Betrieb (§ 23 KSchG)",
+      "Nur 3 Kündigungsgründe zulässig: personenbedingt (z.B. Krankheit), verhaltensbedingt (Abmahnung nötig) oder betriebsbedingt (Sozialauswahl nötig)"
+    ],
+    legalConsequence: "Unwirksamkeit der Kündigung und Fortbestand des Arbeitsverhältnisses bei rechtzeitiger Klage vor dem Arbeitsgericht.",
+    keywords: ["kündigung", "arbeitsrecht", "arbeitnehmer", "abfindung", "abmahnung", "fristlose kündigung", "betriebsbedingt"]
+  },
+  {
+    code: "§ 4 KSchG",
+    book: "KSchG",
+    title: "3-Wochen-Klagefrist zur Kündigungsschutzklage",
+    officialUrl: "https://www.gesetze-im-internet.de/kschg/__4.html",
+    exactWording: "Will ein Arbeitnehmer geltend machen, dass eine Kündigung sozial ungerechtfertigt oder aus anderen Gründen rechtsunwirksam ist, so muss er innerhalb von drei Wochen nach Zugang der schriftlichen Kündigung Klage beim Arbeitsgericht auf Feststellung erheben, dass das Arbeitsverhältnis durch die Kündigung nicht aufgelöst ist.",
+    elements: [
+      "Schriftlicher Zugang des Kündigungsschreibens beim Arbeitnehmer",
+      "Strikte Ausschlussfrist von 3 Wochen (21 Kalendertagen)",
+      "Versäumnis führt nach § 7 KSchG zur Fiktion der Rechtswirksamkeit der Kündigung"
+    ],
+    legalConsequence: "Verstreichen der 3-Wochen-Frist vernichtet die Chance auf Weiterbeschäftigung oder Abfindungsverhandlung endgültig.",
+    keywords: ["3 wochen frist", "kündigungsschutzklage", "arbeitsgericht", "klagefrist", "arbeitsvertrag gekündigt"]
+  },
+  // ─── VERWALTUNGS- & ORDNUNGSWIDRIGKEITENRECHT (OWiG & VwGO) ─────────────
+  {
+    code: "§ 67 OWiG",
+    book: "OWiG",
+    title: "Einspruch gegen den Bußgeldbescheid (2-Wochen-Frist)",
+    officialUrl: "https://www.gesetze-im-internet.de/owig_1968/__67.html",
+    exactWording: "Der Betroffene kann gegen den Bußgeldbescheid innerhalb von zwei Wochen nach Zustellung schriftlich oder zur Niederschrift bei der Verwaltungsbehörde, die den Bußgeldbescheid erlassen hat, Einspruch einlegen.",
+    elements: [
+      "Förmliche Zustellung des Bußgeldbescheids (gelber Umschlag mit Zustellungsurkunde)",
+      "Einspruchsfrist exakt 2 Wochen ab dem auf dem Umschlag vermerkten Datum",
+      "Schriftform oder persönliche Niederschrift bei der Behörde"
+    ],
+    legalConsequence: "Hemmung der Rechtskraft des Bußgeldbescheids; Überprüfung der Messung/Beweise durch Behörde und ggf. Amtsgericht.",
+    keywords: ["einspruch", "bußgeldbescheid", "2 wochen", "anfechten", "ordnungsamt", "polizei bußgeld"]
+  },
+  {
+    code: "§ 70 VwGO",
+    book: "VwGO",
+    title: "Widerspruchsfrist gegen Verwaltungsakte (1-Monats-Frist)",
+    officialUrl: "https://www.gesetze-im-internet.de/vwgo/__70.html",
+    exactWording: "Der Widerspruch ist innerhalb eines Monats, nachdem der Verwaltungsakt dem Beschwerten bekanntgegeben worden ist, schriftlich, in elektronischer Form nach § 3a Abs. 2 des Verwaltungsverfahrensgesetzes oder zur Niederschrift bei der Behörde zu erheben, die den Verwaltungsakt erlassen hat.",
+    elements: [
+      "Bekanntgabe eines belastenden Verwaltungsaktes (z.B. Baugenehmigungsablehnung, Gebührenbescheid, Gewerbeuntersagung)",
+      "Vorhandensein einer ordnungsgemäßen Rechtsbehelfsbelehrung (bei Fehlen gilt 1-Jahres-Frist gem. § 58 Abs. 2 VwGO)",
+      "Einmonatige Ausschlussfrist"
+    ],
+    legalConsequence: "Zulässigkeit des behördlichen Vorverfahrens; bei Fristversäumung wird der Verwaltungsakt bestandskräftig.",
+    keywords: ["widerspruch", "verwaltungsakt", "bescheid", "1 monat frist", "rechtsbehelfsbelehrung", "behörde"]
   }
 ];
 

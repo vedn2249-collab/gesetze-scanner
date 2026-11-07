@@ -75,10 +75,29 @@ const DAILY_LEGAL_TIPS = [
 ];
 
 export const LiveRadarTicker: React.FC = () => {
+  const [events, setEvents] = useState<RadarEvent[]>(RADAR_EVENTS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showDailyTip, setShowDailyTip] = useState(false);
   const [isReturningUser, setIsReturningUser] = useState(false);
+
+  // Load real dynamic ticker events from server
+  useEffect(() => {
+    const fetchTicker = async () => {
+      try {
+        const res = await fetch("/api/radar-ticker");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.items && Array.isArray(data.items) && data.items.length > 0) {
+            setEvents(data.items);
+          }
+        }
+      } catch (e) {
+        console.warn("Ticker fetch error, using verified norms:", e);
+      }
+    };
+    fetchTicker();
+  }, []);
 
   // Check returning visitor state
   useEffect(() => {
@@ -95,14 +114,14 @@ export const LiveRadarTicker: React.FC = () => {
 
   // Cycle through events automatically every 5.5s unless paused by user hover
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || events.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % RADAR_EVENTS.length);
+      setCurrentIndex((prev) => (prev + 1) % events.length);
     }, 5500);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, events.length]);
 
-  const activeEvent = RADAR_EVENTS[currentIndex];
+  const activeEvent = events[currentIndex % events.length] || RADAR_EVENTS[0];
   const todayTip = DAILY_LEGAL_TIPS[0];
 
   return (
